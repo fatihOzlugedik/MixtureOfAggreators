@@ -1,0 +1,11 @@
+/home/aih/fatih.oezluegedik/.bashrc: line 803: warning: here-document at line 255 delimited by end-of-file (wanted `EOF')
+/home/aih/fatih.oezluegedik/.bashrc: line 255: EOFcat: command not found
+usage: train_5fold_test_fixed.py [-h] [--lr LR] [--grad_accum GRAD_ACCUM]
+                                 [--scheduler SCHEDULER] [--ep EP] [--es ES]
+                                 [--wd WD] [--metric {loss,f1}] [--seed SEED]
+                                 [--arch ARCH] [--checkpoint CHECKPOINT]
+                                 [--data_path DATA_PATH]
+                                 [--result_folder RESULT_FOLDER] --hierarchy
+                                 {fine_leafs_2_level,normal_leafs_2_level,full_hierarchy}
+                                 --alpha ALPHA
+train_5fold_test_fixed.py: error: the following arguments are required: --hierarchy, --alpha
