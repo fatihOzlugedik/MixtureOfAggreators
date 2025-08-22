@@ -2,12 +2,11 @@ import torch
 from torch.utils.data import Dataset
 import h5py
 import os
-import numpy as np
 
 class MILDataset(Dataset):
     '''Unified MLL MIL dataset for both .pt and .h5 formats'''
 
-    def __init__(self, path_to_data, data_files,label_set, ext="h5"):
+    def __init__(self, path_to_data, data_files, ext="h5"):
         """
         Args:
             path_to_data (str): Path to directory containing patient .pt or .h5 files.
@@ -18,7 +17,6 @@ class MILDataset(Dataset):
         self.path_to_data = path_to_data
         self.data_files = data_files
         self.ext = ext
-        self.label_set = label_set
 
     def __len__(self):
         return len(self.data_files)
@@ -37,50 +35,44 @@ class MILDataset(Dataset):
         file_path = os.path.join(self.path_to_data, file_name)
 
         if self.ext == "pt":
-            features, _, _ = read_ptfile(file_path,self)
+            features, _, _ = read_ptfile(file_path)
         else:
-            features, _, _ = read_h5file(file_path,self.label_set)
+            features, _, _ = read_h5file(file_path)
 
         return features.shape[1]
 
     def __getitem__(self, idx):
         patient_id = self.data_files.patient_files[idx]
-        
-
         file_name = patient_id + f".{self.ext}"
         file_path = os.path.join(self.path_to_data, file_name)
 
-        if self.label_set == 'diagnose':
-            training_label = self.data_files.diagnose
-        elif self.label_set == 'labels':
-            training_label = self.data_files.labels
-
         # Load based on extension
         if self.ext == "pt":
-            features,eight_class_label,img_paths= read_ptfile(file_path,label_set=self.label_set)
+            features, label, img_paths = read_ptfile(file_path)
         else:
-            features,eight_class_label,img_paths = read_h5file(file_path,label_set=self.label_set)
+            features, label, img_paths = read_h5file(file_path)
 
         assert features.ndim == 2, f"Expected [N, D], got {features.shape}"
-      
-        training_label = training_label[idx]
 
-        return features,eight_class_label,training_label,img_paths,patient_id
+        # Optionally override label from CSV if needed (only if trustworthy)
+        label = self.data_files.labels[idx]
 
-def read_h5file(file_name, label_set):
+        return features, label, img_paths, patient_id
+
+def read_h5file(file_name):
     with h5py.File(file_name, 'r') as hf:
         features = hf['features'][()]
-        eight_class_label = np.array(hf['labels'])  # Convert to numpy array
+        label = hf['labels'][()]
         img_paths_raw = hf['img_paths'][()]
         if isinstance(img_paths_raw[0], bytes):
             img_paths = [p.decode('utf-8') for p in img_paths_raw]
         else:
             img_paths = [str(p) for p in img_paths_raw]
-    return features, eight_class_label, img_paths
+    return features, label, img_paths
 
-def read_ptfile(file_name, label_set):
+def read_ptfile(file_name):
     data = torch.load(file_name, map_location=torch.device("cpu"))
     features = data['features']
-    eight_class_label = np.array(data['labels'])  # Convert to numpy array
+    label = data['labels']
     img_paths = data['image_paths']
-    return features, eight_class_label, img_paths
+    return features, label, img_paths

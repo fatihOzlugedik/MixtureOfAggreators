@@ -1,2 +1,8 @@
 /home/aih/fatih.oezluegedik/.bashrc: line 803: warning: here-document at line 255 delimited by end-of-file (wanted `EOF')
 /home/aih/fatih.oezluegedik/.bashrc: line 255: EOFcat: command not found
+Traceback (most recent call last):
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/train_5fold_test_fixed.py", line 12, in <module>
+    from model_train import ModelTrainer
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/model_train.py", line 16, in <module>
+    from rollout import generate_rollout
+ModuleNotFoundError: No module named 'rollout'

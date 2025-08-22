@@ -18,7 +18,7 @@ conda activate caitomorph
 
 # run a single fold with fewer epochs just to test
 python -u train_5fold_test_fixed.py \
-    --arch "mixture_of_aggregators" \
+    --arch MixtureOfAggregators \
     --data_path /lustre/groups/labs/marr/qscd01/workspace/beluga_features_extracted/dinobloom-b \
     --ep 2 \
     --es 1 \

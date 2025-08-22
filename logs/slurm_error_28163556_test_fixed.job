@@ -1,0 +1,12 @@
+/home/aih/fatih.oezluegedik/.bashrc: line 803: warning: here-document at line 255 delimited by end-of-file (wanted `EOF')
+/home/aih/fatih.oezluegedik/.bashrc: line 255: EOFcat: command not found
+/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/sklearn/model_selection/_split.py:811: UserWarning: The least populated class in y has only 4 members, which is less than n_splits=5.
+  warnings.warn(
+Traceback (most recent call last):
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/train_5fold_test_fixed.py", line 268, in <module>
+    main()
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/train_5fold_test_fixed.py", line 195, in main
+    model = cAItomorph(
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/classifier.py", line 13, in __init__
+    self.model = models.__dict__[arch](
+TypeError: MixtureOfAggregators.__init__() got an unexpected keyword argument 'expert_mode'

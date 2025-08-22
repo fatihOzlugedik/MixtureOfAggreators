@@ -13,7 +13,7 @@ import os
 import pandas as pd
 from typing import Dict, Tuple, List
 
-from rollout import generate_rollout
+#from rollout import generate_rollout
 from patient_data import DataMatrix, PatientRecord
 
 
@@ -116,6 +116,8 @@ class ModelTrainer:
             loss_func = nn.CrossEntropyLoss()
 
             #loss_out = loss_func(prediction, label[0])
+            prediction=prediction.squeeze(0)  # Ensure prediction is 2D
+
             loss_out = loss_func(prediction, label)
             train_loss += loss_out.item()
 
@@ -210,7 +212,8 @@ class ModelTrainer:
                 loss = nn.CrossEntropyLoss()(logits, label)
                 running_loss += loss.item() * bag.size(0)
 
-                cls_attention_scores = generate_rollout(self.model, bag, start_layer=0)
+                #cls_attention_scores = generate_rollout(self.model, bag, start_layer=0)
+                cls_attention_scores = [0,0,0]  # Placeholder, if you want to compute attention scores, uncomment the line above
                 cls_attention_scores = cls_attention_scores.squeeze(0)
 
                 label_prediction = torch.argmax(logits, dim=1).item()

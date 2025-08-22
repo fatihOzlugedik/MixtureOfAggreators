@@ -13,10 +13,10 @@ class cAItomorph(nn.Module):
         self.model = models.__dict__[arch](
             input_dim=embedding_dim,
             num_classes=class_count,
-            expert_mode=expert_mode,
+            mode=expert_mode,                      # <-- mapped
             router_style=router_style,
-            topk=topk,
-            use_local_head=use_local_head
+            k_active=topk,                         # <-- mapped
+            experts_use_local_head=use_local_head  # <-- mapped
         )
         self.save_gates = save_gates
  
@@ -42,8 +42,6 @@ class cAItomorph(nn.Module):
         elif return_gates:
             return logits, gates
         return logits
-
-
 
     def __repr__(self):
         return f"cAItomorph(model={self.model})"
