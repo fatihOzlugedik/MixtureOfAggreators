@@ -160,6 +160,7 @@ class ModelTrainer:
                 prediction = self.model(bag)
 
                 loss_func = nn.CrossEntropyLoss()
+                prediction = prediction.squeeze(0)  # Ensure prediction is 2D
                 loss_out = loss_func(prediction, label)
                 val_loss += loss_out.item()
 
@@ -208,12 +209,12 @@ class ModelTrainer:
                         all_gates.append(gates.detach().cpu().numpy())
                 else:
                     latent, logits = self.model(bag, return_latent=True)
-
+                logits = logits.squeeze(0)  # Ensure logits is 2D
                 loss = nn.CrossEntropyLoss()(logits, label)
                 running_loss += loss.item() * bag.size(0)
 
                 #cls_attention_scores = generate_rollout(self.model, bag, start_layer=0)
-                cls_attention_scores = [0,0,0]  # Placeholder, if you want to compute attention scores, uncomment the line above
+                cls_attention_scores = torch.Tensor([0,0,0])  # Placeholder, if you want to compute attention scores, uncomment the line above
                 cls_attention_scores = cls_attention_scores.squeeze(0)
 
                 label_prediction = torch.argmax(logits, dim=1).item()
