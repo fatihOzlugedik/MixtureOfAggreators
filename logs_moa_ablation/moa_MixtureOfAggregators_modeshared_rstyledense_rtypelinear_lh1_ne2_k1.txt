@@ -1,0 +1,82 @@
+Results are saved in:  Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_dense_topk1_localheadTrue_router_arch_linear_seed38
+
+Initialize datasets...
+Found device:  1 x  cuda
+Reading files from:  data_cross_val_8_classes/data_fold_1
+Embedding dimension: 768
+Initialize dataloaders...
+Dataloaders are ready..
+cAItomorph(model=MixtureOfAggregators(
+  (experts): ModuleList(
+    (0-1): 2 x TransformerExpert(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=512, bias=True)
+        (1): ReLU()
+      )
+      (dropout): Dropout(p=0.1, inplace=False)
+      (transformer): TransformerBlocks(
+        (layers): ModuleList(
+          (0-1): 2 x ModuleList(
+            (0): PreNorm(
+              (fn): Attention(
+                (attend): Softmax(dim=-1)
+                (to_qkv): Linear(in_features=512, out_features=1536, bias=False)
+                (to_out): Sequential(
+                  (0): Linear(in_features=512, out_features=512, bias=True)
+                  (1): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+            (1): PreNorm(
+              (fn): FeedForward(
+                (net): Sequential(
+                  (0): Linear(in_features=512, out_features=1024, bias=True)
+                  (1): GELU(approximate='none')
+                  (2): Dropout(p=0.1, inplace=False)
+                  (3): Linear(in_features=1024, out_features=512, bias=True)
+                  (4): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+      (mlp_head): Sequential(
+        (0): Linear(in_features=512, out_features=64, bias=True)
+        (1): ReLU()
+        (2): Linear(in_features=64, out_features=8, bias=True)
+      )
+    )
+  )
+  (router_proj): Sequential(
+    (0): Linear(in_features=768, out_features=512, bias=True)
+    (1): ReLU()
+  )
+  (router_fc): Linear(in_features=512, out_features=2, bias=True)
+))
+Setup complete.
+
+Using scheduler: ReduceLROnPlateau
+Starting training
+- ep: 1/150, loss: 1.804, acc: 0.324, balanced acc: 0.219,weighted_f1: 0.250, 12s, train
+- ep: 1/150, loss: 1.548, acc: 0.431, balanced acc: 0.333,weighted_f1: 0.354, 1s, val
+🔖  Saved new best model (metric=1.5476)
+- ep: 2/150, loss: 1.455, acc: 0.484, balanced acc: 0.394,weighted_f1: 0.429, 10s, train
+- ep: 2/150, loss: 1.280, acc: 0.505, balanced acc: 0.416,weighted_f1: 0.462, 1s, val
+🔖  Saved new best model (metric=1.2800)
+- ep: 3/150, loss: 1.210, acc: 0.569, balanced acc: 0.481,weighted_f1: 0.527, 11s, train
+- ep: 3/150, loss: 1.222, acc: 0.532, balanced acc: 0.438,weighted_f1: 0.484, 1s, val
+🔖  Saved new best model (metric=1.2217)
+- ep: 4/150, loss: 1.063, acc: 0.624, balanced acc: 0.552,weighted_f1: 0.600, 10s, train
+- ep: 4/150, loss: 1.133, acc: 0.584, balanced acc: 0.500,weighted_f1: 0.550, 1s, val
+🔖  Saved new best model (metric=1.1334)
+- ep: 5/150, loss: 0.987, acc: 0.654, balanced acc: 0.587,weighted_f1: 0.634, 10s, train
+- ep: 5/150, loss: 0.995, acc: 0.645, balanced acc: 0.579,weighted_f1: 0.628, 1s, val
+🔖  Saved new best model (metric=0.9955)
+- ep: 6/150, loss: 0.840, acc: 0.715, balanced acc: 0.664,weighted_f1: 0.704, 11s, train
+- ep: 6/150, loss: 1.063, acc: 0.609, balanced acc: 0.527,weighted_f1: 0.561, 1s, val
+- ep: 7/150, loss: 0.740, acc: 0.760, balanced acc: 0.714,weighted_f1: 0.753, 10s, train
+- ep: 7/150, loss: 1.028, acc: 0.612, balanced acc: 0.526,weighted_f1: 0.589, 1s, val

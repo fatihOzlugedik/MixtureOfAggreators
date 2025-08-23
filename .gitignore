@@ -1,0 +1,21 @@
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore logs
+*.log
+
+# Ignore environment files
+.env
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore build output
+/build/
+/dist/
+
+results*/
+*.ckpt/
+Beluga_full/
