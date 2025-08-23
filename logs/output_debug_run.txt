@@ -1,4 +1,4 @@
-Results are saved in:  Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_topk_topk1_localheadFalse_seed386
+Results are saved in:  Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_topk_topk1_localheadFalse_seed38
 
 Initialize datasets...
 Found device:  1 x  cuda
@@ -65,4 +65,4 @@ Setup complete.
 
 Using scheduler: ReduceLROnPlateau
 Starting training
-- ep: 1/2, loss: 1.714, acc: 0.374, balanced acc: 0.270,weighted_f1: 0.295, 36s, train
+- ep: 1/2, loss: 1.726, acc: 0.363, balanced acc: 0.259,weighted_f1: 0.282, 22s, train

@@ -94,18 +94,30 @@ def main():
         '--result_folder',
         help='store folder with custom name',
         required=False)    
+    parser.add_argument( '--saving_name',
+                        help='name for saving the model',
+                        required=True)
         # Mixture-of-Experts / Aggregator setup
     parser.add_argument('--expert_mode', choices=['shared', 'separate', 'shared_adapter'], 
                         default='shared', help="Expert sharing strategy")
+
     parser.add_argument('--router_style', choices=['topk', 'dense'], 
                         default='topk', help="Routing strategy")
+
+
     parser.add_argument('--topk', type=int, default=1, 
                         help="Top-k experts to use when router_style=topk")
+
     parser.add_argument('--use_local_head', action='store_true', 
                         help="If set, experts have individual heads")
+                        
     parser.add_argument('--save_gates', action='store_true',
                         help="Save router gate activations during training/validation")
-                           
+    parser.add_argument('--num_expert', type=int, default=1,
+                        help="Number of experts to use")
+    parser.add_argument('--router_type', choices=['linear', 'mlp', 'transformer'],
+                        default='linear', help="Router type")
+    
     args = parser.parse_args()
 
     # Set random seed for reproducibility
@@ -121,8 +133,9 @@ def main():
 
     data_path = args.data_path
     backbone_name = data_path.split('/')[-1]
+    save_root = Path(args.saving_name)
 
-    RESULT_FOLDER_ROOT = f"Results_5fold_testfixed_{backbone_name}_{args.arch}_{args.expert_mode}_{args.router_style}_topk{args.topk}_localhead{args.use_local_head}_seed{seed}"
+    RESULT_FOLDER_ROOT = f"Results_5fold_testfixed_{backbone_name}_{args.arch}_{args.expert_mode}_{args.router_style}_topk{args.topk}_localhead{args.use_local_head}_router_arch_{args.router_type}_seed{seed}"
     def get_unique_folder(base_folder):
         counter = 1
         new_folder = base_folder
@@ -167,12 +180,12 @@ def main():
     test_files = pd.read_csv(os.path.join(csv_root,f'data_fold_1',"test.csv"))
 
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
-
+     
     for fold, (train_index, val_index) in enumerate(skf.split(train_val_files, train_val_files['diagnose'])):
         train_files = train_val_files.iloc[train_index].reset_index(drop=True)
         val_files = train_val_files.iloc[val_index].reset_index(drop=True)
 
-        RESULT_FOLDER = RESULT_FOLDER_ROOT / f'fold_{fold}'
+        RESULT_FOLDER = save_root / f'{args.num_expert}_experts' / RESULT_FOLDER_ROOT / f'fold_{fold}'
         RESULT_FOLDER.mkdir(parents=True, exist_ok=True)
 
         datasets['train'] = MILDataset(data_path, train_files)
@@ -200,7 +213,10 @@ def main():
             router_style=args.router_style,
             topk=args.topk,
             use_local_head=args.use_local_head,
-            save_gates=args.save_gates
+            save_gates=args.save_gates,
+            num_expert=args.num_expert,
+            router_type=args.router_type
+
         )
 
         if checkpoint is not None:

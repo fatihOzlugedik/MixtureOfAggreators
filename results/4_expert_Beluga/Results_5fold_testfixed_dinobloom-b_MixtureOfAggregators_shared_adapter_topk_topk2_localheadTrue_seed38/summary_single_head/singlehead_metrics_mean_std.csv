@@ -1,0 +1,4 @@
+Metric,Mean,Std
+Balanced Accuracy,0.6029,0.0254
+Weighted F1,0.6522,0.0228
+Accuracy,0.6689,0.0192

@@ -35,11 +35,12 @@ class MixtureOfAggregators(nn.Module):
         self.k_active = k_active
         self.mode = mode
         self.experts_use_local_head = experts_use_local_head
+        self.router_type = router_type
 
         # === shared projection if needed ===
         shared_proj = None
         if mode in ["shared", "shared_adapter"]:
-            shared_proj = Projection(input_dim, heads * dim_head)
+            shared_proj = nn.Sequential(nn.Linear(input_dim, heads*dim_head, bias=True), nn.ReLU())
 
         # === experts ===
         self.experts = nn.ModuleList([
@@ -63,16 +64,27 @@ class MixtureOfAggregators(nn.Module):
         ])
 
         # === router ===
-        self.router_proj = Projection(input_dim, heads * dim_head)
-        if router_type == "mlp":
+        self.router_proj = nn.Sequential(nn.Linear(input_dim, heads*dim_head, bias=True), nn.ReLU())
+        if self.router_type == "mlp":
             self.router_fc = nn.Sequential(
                 nn.Linear(dim, 256), nn.ReLU(),
                 nn.Linear(256, num_experts)
             )
-        elif router_type == "linear":
+        elif self.router_type == "linear":
             self.router_fc = nn.Linear(dim, num_experts)
+        elif self.router_type == "transformer":
+            self.router_fc = TransformerExpert(
+            num_classes=num_experts,
+            input_dim=input_dim,
+            dim=dim, depth=depth, heads=heads, mlp_dim=mlp_dim,
+            dim_head=dim_head, dropout=dropout, emb_dropout=emb_dropout,
+            pool=pool, pos_enc=pos_enc, mode=mode,
+            shared_proj=None,               # decouple from experts
+            use_local_head=True
+        )
+
         else:
-            raise ValueError(f"Unknown router_type {router_type}")
+            raise ValueError(f"Unknown router_type {self.router_type}")
 
         # === global head (for topk or for dense+no-local-head) ===
         if not experts_use_local_head or router_style == "topk":
@@ -86,10 +98,12 @@ class MixtureOfAggregators(nn.Module):
     def forward(self, x, temp=1.0, k=None):
         B, N, _ = x.shape
         k = k or self.k_active
-
-        # Router input = mean pooled projected features
-        router_in = self.router_proj(x).mean(dim=1)  # [B, dim]
-        router_logits = self.router_fc(router_in)    # [B, E]
+        if self.router_type == "transformer":
+            router_in=x
+            _,router_logits=self.router_fc(router_in)  # [B, E]
+        else:
+            router_in = self.router_proj(x).mean(dim=1)  # [B, dim]
+            router_logits = self.router_fc(router_in)    # [B, E]
         g_soft = F.softmax(router_logits / temp, dim=-1)  # [B, E]
 
         if self.router_style == "dense":

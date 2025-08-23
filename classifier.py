@@ -4,20 +4,29 @@ import models as models
 class cAItomorph(nn.Module):
     def __init__(self, class_count, arch, embedding_dim=768,
                  expert_mode="shared", router_style="topk", topk=1,
-                 use_local_head=False, save_gates=False):
+                 use_local_head=False, save_gates=False, num_expert=1, router_type="linear"):
         super(cAItomorph, self).__init__()
 
         if arch not in models.__dict__:
             raise ValueError(f"Unknown model architecture '{arch}'")
         
-        self.model = models.__dict__[arch](
-            input_dim=embedding_dim,
-            num_classes=class_count,
-            mode=expert_mode,                      # <-- mapped
-            router_style=router_style,
-            k_active=topk,                         # <-- mapped
-            experts_use_local_head=use_local_head  # <-- mapped
-        )
+        if expert_mode is None :
+            self.model = models.__dict__[arch](
+                input_dim=embedding_dim,
+                num_classes=class_count
+            )
+        else:
+            self.model = models.__dict__[arch](
+                input_dim=embedding_dim,
+                num_classes=class_count,
+                mode=expert_mode,
+                router_style=router_style,
+                k_active=topk,
+                experts_use_local_head=use_local_head,
+                num_experts=num_expert,
+                router_type=router_type
+
+            )
         self.save_gates = save_gates
  
     def forward(self, embeddings, return_latent=False, return_gates=False):

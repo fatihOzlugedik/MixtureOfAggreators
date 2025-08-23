@@ -55,7 +55,7 @@ class TransformerExpert(nn.Module):
 
         # === projection ===
         if mode == "separate":
-            self.projection = Projection(input_dim, heads * dim_head)
+            self.projection = nn.Sequential(nn.Linear(input_dim, heads*dim_head, bias=True), nn.ReLU())
         elif mode == "shared":
             self.projection = shared_proj
         elif mode == "shared_adapter":
