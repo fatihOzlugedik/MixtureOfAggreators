@@ -1,0 +1,3 @@
+[INFO] Total meaningful combos = 126 (expect 126 if full range)
+[INFO] Job 28172630.1
+       arch=MixtureOfAggregators mode=shared rstyle=dense rtype=linear lh=0 numexp=4 k=1
