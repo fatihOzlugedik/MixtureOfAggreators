@@ -1,0 +1,37 @@
+/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/sklearn/model_selection/_split.py:811: UserWarning: The least populated class in y has only 4 members, which is less than n_splits=5.
+  warnings.warn(
+  0%|          | 0/1307 [00:00<?, ?it/s]  0%|          | 0/1307 [00:00<?, ?it/s]
+Traceback (most recent call last):
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/train_5fold_test_fixed.py", line 284, in <module>
+    main()
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/train_5fold_test_fixed.py", line 253, in main
+    model, conf_matrix = train_obj.launch_training()
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/model_train.py", line 61, in launch_training
+    val_metrics = self._run_epoch(ep, backprop_every=self.grad_accum)
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/model_train.py", line 114, in _run_epoch
+    prediction = self.model(bag)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/classifier.py", line 40, in forward
+    out = self.model(embeddings)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/models/mixture_of_aggregators.py", line 103, in forward
+    _,router_logits=self.router_fc(router_in)  # [B, E]
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/ictstr01/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/models/transformer_expert.py", line 95, in forward
+    x = self.projection(x)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/aih/fatih.oezluegedik/miniconda3/envs/caitomorph/lib/python3.10/site-packages/torch/nn/modules/container.py", line 240, in forward
+    input = module(input)
+TypeError: 'NoneType' object is not callable

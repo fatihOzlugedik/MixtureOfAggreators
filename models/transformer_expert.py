@@ -50,7 +50,7 @@ class TransformerExpert(nn.Module):
                  pos_enc=None,
                  mode="separate",
                  shared_proj=None,
-                 use_local_head=True):   # <<--- NEW flag
+                 use_local_head=True):   
         super().__init__()
 
         # === projection ===

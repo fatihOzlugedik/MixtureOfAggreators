@@ -146,13 +146,7 @@ def main():
         
         return new_folder
 
-    if not os.path.exists(RESULT_FOLDER_ROOT):
-        os.makedirs(RESULT_FOLDER_ROOT)
-    else:
-        if checkpoint is None:
-            unique_folder = get_unique_folder(RESULT_FOLDER_ROOT)
-            os.makedirs(unique_folder)
-            RESULT_FOLDER_ROOT = unique_folder
+
     
     RESULT_FOLDER_ROOT = Path(RESULT_FOLDER_ROOT)
     print('Results are saved in: ',RESULT_FOLDER_ROOT)

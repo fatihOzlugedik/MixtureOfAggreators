@@ -9,7 +9,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=60G
-#SBATCH --array=21-125   # adjust range as needed
+#SBATCH --array=0-41            # ← transformer-only grid has 42 combos
 
 # Safer shell flags: turn on -u AFTER sourcing env files
 set -eo pipefail
@@ -20,29 +20,30 @@ set -eo pipefail
 mkdir -p logs_moa_ablation
 
 set +u
-# system and user profiles (ignore if missing)
 source /etc/profile 2>/dev/null || true
 source "$HOME/.bashrc" 2>/dev/null || true
-set -u
 
-# activate conda (guard if not present)
+# robust conda activation (no error if conda missing)
 if command -v conda >/dev/null 2>&1; then
-  set +u
+  source "$(conda info --base)/etc/profile.d/conda.sh" 2>/dev/null || true
   conda activate caitomorph 2>/dev/null || true
-  set -u
 fi
+set -u
 
 cd /lustre/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators
 export PYTHONPATH="$PWD${PYTHONPATH:+:$PYTHONPATH}"
+
 # ──────────────────────────────────────────────────────────────────────────────
-# 2) Search space
+# 2) Search space (TRANSFORMER ONLY)
 # ──────────────────────────────────────────────────────────────────────────────
-expert_modes=(shared separate shared_adapter)
-router_styles=(dense topk)
-router_types=(linear mlp transformer)
-use_local_head=(0 1)
-num_experts=(2 4)
-# topk will be derived per (router_style, num_expert)
+expert_modes=(shared separate shared_adapter)   # 3
+router_styles=(dense topk)                      # 2
+router_types=(transformer)                      # 1 (transformer-only)
+use_local_head=(0 1)                            # 2
+num_experts=(2 4)                               # 2
+# topk derived per (router_style, num_expert)
+# dense: k=1
+# topk:  ne=2 -> k in {1,2}; ne=4 -> k in {1,2,3}
 
 # ──────────────────────────────────────────────────────────────────────────────
 # 3) Build only meaningful combos into a flat array
@@ -58,9 +59,8 @@ for mode in "${expert_modes[@]}"; do
             k=1
             COMBOS+=("$mode $rstyle $rtype $lh $ne $k")
           else
-            # topk: only k <= num_expert (for ne=2 -> k=1,2 ; for ne=4 -> k=1,2,3)
             maxk=$(( ne == 2 ? 2 : 3 ))
-            for k in $(seq 1 $maxk); do
+            for k in $(seq 1 "$maxk"); do
               COMBOS+=("$mode $rstyle $rtype $lh $ne $k")
             done
           fi
@@ -71,13 +71,13 @@ for mode in "${expert_modes[@]}"; do
 done
 
 TOTAL=${#COMBOS[@]}
-echo "[INFO] Total meaningful combos = $TOTAL (expect 126 if full range)"
+echo "[INFO] Total meaningful combos = $TOTAL (expected 42 for transformer-only)"
 
 # Map SLURM index
 IDX=${SLURM_ARRAY_TASK_ID}
 if (( IDX < 0 || IDX >= TOTAL )); then
-  echo "[FATAL] Index $IDX out of range 0..$((TOTAL-1))"
-  exit 1
+  echo "[SKIP] Index $IDX out of range 0..$((TOTAL-1))"
+  exit 0
 fi
 
 read -r EXPERT_MODE ROUTER_STYLE ROUTER_TYPE USE_LOCAL_HEAD NUM_EXPERT TOPK <<< "${COMBOS[$IDX]}"
@@ -111,4 +111,4 @@ python -u train_5fold_test_fixed.py \
   --topk "$TOPK" \
   $( [[ "$USE_LOCAL_HEAD" -eq 1 ]] && echo "--use_local_head" ) \
   --save_gates \
-  > "logs_moa_ablation/moa_${ARCH}_mode${EXPERT_MODE}_rstyle${ROUTER_STYLE}_rtype${ROUTER_TYPE}_lh${USE_LOCAL_HEAD}_ne${NUM_EXPERT}_k${TOPK}.txt"
+  | tee "logs_moa_ablation/moa_${ARCH}_mode${EXPERT_MODE}_rstyle${ROUTER_STYLE}_rtype${ROUTER_TYPE}_lh${USE_LOCAL_HEAD}_ne${NUM_EXPERT}_k${TOPK}.txt"

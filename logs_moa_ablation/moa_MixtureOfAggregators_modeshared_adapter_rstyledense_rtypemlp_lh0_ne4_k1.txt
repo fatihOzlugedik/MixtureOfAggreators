@@ -1,0 +1,664 @@
+Results are saved in:  Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381
+
+Initialize datasets...
+Found device:  1 x  cuda
+Reading files from:  data_cross_val_8_classes/data_fold_1
+Embedding dimension: 768
+Initialize dataloaders...
+Dataloaders are ready..
+cAItomorph(model=MixtureOfAggregators(
+  (experts): ModuleList(
+    (0-3): 4 x TransformerExpert(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=512, bias=True)
+        (1): ReLU()
+      )
+      (dropout): Dropout(p=0.1, inplace=False)
+      (transformer): TransformerBlocks(
+        (layers): ModuleList(
+          (0-1): 2 x ModuleList(
+            (0): PreNorm(
+              (fn): Attention(
+                (attend): Softmax(dim=-1)
+                (to_qkv): Linear(in_features=512, out_features=1536, bias=False)
+                (to_out): Sequential(
+                  (0): Linear(in_features=512, out_features=512, bias=True)
+                  (1): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+            (1): PreNorm(
+              (fn): FeedForward(
+                (net): Sequential(
+                  (0): Linear(in_features=512, out_features=1024, bias=True)
+                  (1): GELU(approximate='none')
+                  (2): Dropout(p=0.1, inplace=False)
+                  (3): Linear(in_features=1024, out_features=512, bias=True)
+                  (4): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (router_proj): Sequential(
+    (0): Linear(in_features=768, out_features=512, bias=True)
+    (1): ReLU()
+  )
+  (router_fc): Sequential(
+    (0): Linear(in_features=512, out_features=256, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=256, out_features=4, bias=True)
+  )
+  (head): Sequential(
+    (0): Linear(in_features=512, out_features=64, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=64, out_features=8, bias=True)
+  )
+))
+Setup complete.
+
+Using scheduler: ReduceLROnPlateau
+Starting training
+- ep: 1/150, loss: 1.808, acc: 0.328, balanced acc: 0.219,weighted_f1: 0.245, 27s, train
+- ep: 1/150, loss: 1.582, acc: 0.450, balanced acc: 0.355,weighted_f1: 0.365, 2s, val
+🔖  Saved new best model (metric=1.5823)
+- ep: 2/150, loss: 1.423, acc: 0.510, balanced acc: 0.416,weighted_f1: 0.455, 26s, train
+- ep: 2/150, loss: 1.314, acc: 0.505, balanced acc: 0.409,weighted_f1: 0.430, 3s, val
+🔖  Saved new best model (metric=1.3136)
+- ep: 3/150, loss: 1.192, acc: 0.573, balanced acc: 0.492,weighted_f1: 0.533, 26s, train
+- ep: 3/150, loss: 1.142, acc: 0.581, balanced acc: 0.500,weighted_f1: 0.528, 2s, val
+🔖  Saved new best model (metric=1.1421)
+- ep: 4/150, loss: 1.013, acc: 0.650, balanced acc: 0.576,weighted_f1: 0.626, 26s, train
+- ep: 4/150, loss: 1.072, acc: 0.606, balanced acc: 0.529,weighted_f1: 0.568, 2s, val
+🔖  Saved new best model (metric=1.0715)
+- ep: 5/150, loss: 0.901, acc: 0.672, balanced acc: 0.609,weighted_f1: 0.657, 25s, train
+- ep: 5/150, loss: 1.062, acc: 0.615, balanced acc: 0.551,weighted_f1: 0.604, 3s, val
+🔖  Saved new best model (metric=1.0622)
+- ep: 6/150, loss: 0.778, acc: 0.727, balanced acc: 0.676,weighted_f1: 0.716, 26s, train
+- ep: 6/150, loss: 0.987, acc: 0.645, balanced acc: 0.575,weighted_f1: 0.627, 2s, val
+🔖  Saved new best model (metric=0.9866)
+- ep: 7/150, loss: 0.650, acc: 0.783, balanced acc: 0.744,weighted_f1: 0.779, 26s, train
+- ep: 7/150, loss: 1.154, acc: 0.636, balanced acc: 0.557,weighted_f1: 0.601, 2s, val
+- ep: 8/150, loss: 0.538, acc: 0.827, balanced acc: 0.790,weighted_f1: 0.823, 26s, train
+- ep: 8/150, loss: 1.079, acc: 0.676, balanced acc: 0.627,weighted_f1: 0.657, 2s, val
+- ep: 9/150, loss: 0.402, acc: 0.884, balanced acc: 0.858,weighted_f1: 0.882, 26s, train
+- ep: 9/150, loss: 1.082, acc: 0.667, balanced acc: 0.600,weighted_f1: 0.652, 2s, val
+- ep: 10/150, loss: 0.307, acc: 0.921, balanced acc: 0.902,weighted_f1: 0.921, 26s, train
+- ep: 10/150, loss: 1.177, acc: 0.645, balanced acc: 0.587,weighted_f1: 0.629, 2s, val
+- ep: 11/150, loss: 0.202, acc: 0.966, balanced acc: 0.955,weighted_f1: 0.965, 26s, train
+- ep: 11/150, loss: 1.139, acc: 0.670, balanced acc: 0.615,weighted_f1: 0.660, 3s, val
+- ep: 12/150, loss: 0.184, acc: 0.967, balanced acc: 0.955,weighted_f1: 0.967, 26s, train
+- ep: 12/150, loss: 1.152, acc: 0.670, balanced acc: 0.612,weighted_f1: 0.659, 3s, val
+- ep: 13/150, loss: 0.174, acc: 0.968, balanced acc: 0.956,weighted_f1: 0.968, 26s, train
+- ep: 13/150, loss: 1.161, acc: 0.667, balanced acc: 0.609,weighted_f1: 0.655, 2s, val
+- ep: 14/150, loss: 0.163, acc: 0.972, balanced acc: 0.961,weighted_f1: 0.972, 26s, train
+- ep: 14/150, loss: 1.175, acc: 0.676, balanced acc: 0.617,weighted_f1: 0.665, 2s, val
+- ep: 15/150, loss: 0.153, acc: 0.976, balanced acc: 0.966,weighted_f1: 0.976, 27s, train
+- ep: 15/150, loss: 1.184, acc: 0.679, balanced acc: 0.620,weighted_f1: 0.668, 2s, val
+- ep: 16/150, loss: 0.145, acc: 0.982, balanced acc: 0.974,weighted_f1: 0.982, 26s, train
+- ep: 16/150, loss: 1.188, acc: 0.676, balanced acc: 0.618,weighted_f1: 0.664, 2s, val
+- ep: 17/150, loss: 0.138, acc: 0.979, balanced acc: 0.970,weighted_f1: 0.979, 26s, train
+- ep: 17/150, loss: 1.198, acc: 0.667, balanced acc: 0.607,weighted_f1: 0.654, 3s, val
+- ep: 18/150, loss: 0.129, acc: 0.982, balanced acc: 0.977,weighted_f1: 0.982, 26s, train
+- ep: 18/150, loss: 1.214, acc: 0.676, balanced acc: 0.616,weighted_f1: 0.665, 2s, val
+- ep: 19/150, loss: 0.121, acc: 0.984, balanced acc: 0.977,weighted_f1: 0.984, 26s, train
+- ep: 19/150, loss: 1.219, acc: 0.673, balanced acc: 0.614,weighted_f1: 0.662, 2s, val
+- ep: 20/150, loss: 0.117, acc: 0.989, balanced acc: 0.983,weighted_f1: 0.988, 26s, train
+- ep: 20/150, loss: 1.231, acc: 0.670, balanced acc: 0.610,weighted_f1: 0.658, 2s, val
+- ep: 21/150, loss: 0.108, acc: 0.988, balanced acc: 0.981,weighted_f1: 0.988, 26s, train
+- ep: 21/150, loss: 1.239, acc: 0.673, balanced acc: 0.613,weighted_f1: 0.660, 2s, val
+⏹️  Early-stopping triggered after 20 epochs
+train: loss=0.5750 acc=0.810 balAcc=0.772 f1w=0.805
+Saved gates for train to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_0/gates_train.npy
+val: loss=0.9866 acc=0.645 balAcc=0.575 f1w=0.627
+Saved gates for val to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_0/gates_val.npy
+test: loss=0.9087 acc=0.660 balAcc=0.583 f1w=0.645
+Saved gates for test to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_0/gates_test.npy
+Inference completed for splits: train, val, test
+✅ Saved 2043 patients to 'Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_0/patient_data.h5'.
+
+------------------------Final report--------------------------
+Runtime 0h10min49s
+Fold 0
+Architecture MixtureOfAggregators
+Data path /lustre/groups/labs/marr/qscd01/workspace/beluga_features_extracted/dinobloom-b
+Result folder Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_0
+Scheduler ReduceLROnPlateau
+Weight decay 0.01
+Early stopping 15
+Gradient accumulation 16
+Seed 38
+max. Epochs 150
+Learning rate 5e-05
+Embedding dimension: 768
+Initialize dataloaders...
+Dataloaders are ready..
+cAItomorph(model=MixtureOfAggregators(
+  (experts): ModuleList(
+    (0-3): 4 x TransformerExpert(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=512, bias=True)
+        (1): ReLU()
+      )
+      (dropout): Dropout(p=0.1, inplace=False)
+      (transformer): TransformerBlocks(
+        (layers): ModuleList(
+          (0-1): 2 x ModuleList(
+            (0): PreNorm(
+              (fn): Attention(
+                (attend): Softmax(dim=-1)
+                (to_qkv): Linear(in_features=512, out_features=1536, bias=False)
+                (to_out): Sequential(
+                  (0): Linear(in_features=512, out_features=512, bias=True)
+                  (1): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+            (1): PreNorm(
+              (fn): FeedForward(
+                (net): Sequential(
+                  (0): Linear(in_features=512, out_features=1024, bias=True)
+                  (1): GELU(approximate='none')
+                  (2): Dropout(p=0.1, inplace=False)
+                  (3): Linear(in_features=1024, out_features=512, bias=True)
+                  (4): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (router_proj): Sequential(
+    (0): Linear(in_features=768, out_features=512, bias=True)
+    (1): ReLU()
+  )
+  (router_fc): Sequential(
+    (0): Linear(in_features=512, out_features=256, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=256, out_features=4, bias=True)
+  )
+  (head): Sequential(
+    (0): Linear(in_features=512, out_features=64, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=64, out_features=8, bias=True)
+  )
+))
+Setup complete.
+
+Using scheduler: ReduceLROnPlateau
+Starting training
+- ep: 1/150, loss: 1.868, acc: 0.288, balanced acc: 0.183,weighted_f1: 0.189, 27s, train
+- ep: 1/150, loss: 1.689, acc: 0.376, balanced acc: 0.261,weighted_f1: 0.249, 2s, val
+🔖  Saved new best model (metric=1.6892)
+- ep: 2/150, loss: 1.528, acc: 0.455, balanced acc: 0.356,weighted_f1: 0.386, 27s, train
+- ep: 2/150, loss: 1.432, acc: 0.514, balanced acc: 0.439,weighted_f1: 0.460, 2s, val
+🔖  Saved new best model (metric=1.4322)
+- ep: 3/150, loss: 1.256, acc: 0.574, balanced acc: 0.490,weighted_f1: 0.531, 27s, train
+- ep: 3/150, loss: 1.233, acc: 0.566, balanced acc: 0.468,weighted_f1: 0.509, 2s, val
+🔖  Saved new best model (metric=1.2332)
+- ep: 4/150, loss: 1.045, acc: 0.643, balanced acc: 0.569,weighted_f1: 0.618, 27s, train
+- ep: 4/150, loss: 1.189, acc: 0.566, balanced acc: 0.478,weighted_f1: 0.537, 2s, val
+🔖  Saved new best model (metric=1.1894)
+- ep: 5/150, loss: 0.909, acc: 0.692, balanced acc: 0.635,weighted_f1: 0.683, 26s, train
+- ep: 5/150, loss: 1.053, acc: 0.618, balanced acc: 0.555,weighted_f1: 0.604, 3s, val
+🔖  Saved new best model (metric=1.0533)
+- ep: 6/150, loss: 0.781, acc: 0.741, balanced acc: 0.690,weighted_f1: 0.733, 26s, train
+- ep: 6/150, loss: 1.066, acc: 0.609, balanced acc: 0.542,weighted_f1: 0.606, 3s, val
+- ep: 7/150, loss: 0.622, acc: 0.806, balanced acc: 0.773,weighted_f1: 0.803, 26s, train
+- ep: 7/150, loss: 1.132, acc: 0.581, balanced acc: 0.512,weighted_f1: 0.573, 2s, val
+- ep: 8/150, loss: 0.480, acc: 0.854, balanced acc: 0.826,weighted_f1: 0.852, 27s, train
+- ep: 8/150, loss: 1.144, acc: 0.633, balanced acc: 0.574,weighted_f1: 0.625, 2s, val
+- ep: 9/150, loss: 0.386, acc: 0.891, balanced acc: 0.874,weighted_f1: 0.890, 27s, train
+- ep: 9/150, loss: 1.278, acc: 0.599, balanced acc: 0.545,weighted_f1: 0.590, 2s, val
+- ep: 10/150, loss: 0.265, acc: 0.939, balanced acc: 0.928,weighted_f1: 0.938, 27s, train
+- ep: 10/150, loss: 1.174, acc: 0.627, balanced acc: 0.568,weighted_f1: 0.625, 2s, val
+- ep: 11/150, loss: 0.220, acc: 0.961, balanced acc: 0.953,weighted_f1: 0.961, 27s, train
+- ep: 11/150, loss: 1.179, acc: 0.630, balanced acc: 0.575,weighted_f1: 0.625, 2s, val
+- ep: 12/150, loss: 0.201, acc: 0.968, balanced acc: 0.961,weighted_f1: 0.968, 26s, train
+- ep: 12/150, loss: 1.180, acc: 0.630, balanced acc: 0.576,weighted_f1: 0.626, 3s, val
+- ep: 13/150, loss: 0.191, acc: 0.969, balanced acc: 0.962,weighted_f1: 0.969, 27s, train
+- ep: 13/150, loss: 1.216, acc: 0.609, balanced acc: 0.551,weighted_f1: 0.605, 2s, val
+- ep: 14/150, loss: 0.177, acc: 0.976, balanced acc: 0.969,weighted_f1: 0.976, 27s, train
+- ep: 14/150, loss: 1.206, acc: 0.630, balanced acc: 0.576,weighted_f1: 0.626, 2s, val
+- ep: 15/150, loss: 0.168, acc: 0.979, balanced acc: 0.971,weighted_f1: 0.979, 26s, train
+- ep: 15/150, loss: 1.214, acc: 0.630, balanced acc: 0.577,weighted_f1: 0.624, 3s, val
+- ep: 16/150, loss: 0.160, acc: 0.978, balanced acc: 0.972,weighted_f1: 0.978, 27s, train
+- ep: 16/150, loss: 1.234, acc: 0.636, balanced acc: 0.577,weighted_f1: 0.630, 3s, val
+- ep: 17/150, loss: 0.148, acc: 0.981, balanced acc: 0.974,weighted_f1: 0.981, 27s, train
+- ep: 17/150, loss: 1.248, acc: 0.627, balanced acc: 0.574,weighted_f1: 0.622, 2s, val
+- ep: 18/150, loss: 0.140, acc: 0.985, balanced acc: 0.979,weighted_f1: 0.985, 27s, train
+- ep: 18/150, loss: 1.262, acc: 0.630, balanced acc: 0.577,weighted_f1: 0.625, 2s, val
+- ep: 19/150, loss: 0.131, acc: 0.982, balanced acc: 0.977,weighted_f1: 0.982, 26s, train
+- ep: 19/150, loss: 1.267, acc: 0.633, balanced acc: 0.584,weighted_f1: 0.628, 2s, val
+- ep: 20/150, loss: 0.121, acc: 0.988, balanced acc: 0.983,weighted_f1: 0.988, 26s, train
+- ep: 20/150, loss: 1.285, acc: 0.627, balanced acc: 0.577,weighted_f1: 0.623, 2s, val
+⏹️  Early-stopping triggered after 19 epochs
+train: loss=0.7019 acc=0.773 balAcc=0.731 f1w=0.766
+Saved gates for train to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_1/gates_train.npy
+val: loss=1.0533 acc=0.618 balAcc=0.555 f1w=0.604
+Saved gates for val to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_1/gates_val.npy
+test: loss=0.9331 acc=0.682 balAcc=0.616 f1w=0.667
+Saved gates for test to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_1/gates_test.npy
+Inference completed for splits: train, val, test
+✅ Saved 2043 patients to 'Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_1/patient_data.h5'.
+
+------------------------Final report--------------------------
+Runtime 0h21min15s
+Fold 1
+Architecture MixtureOfAggregators
+Data path /lustre/groups/labs/marr/qscd01/workspace/beluga_features_extracted/dinobloom-b
+Result folder Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_1
+Scheduler ReduceLROnPlateau
+Weight decay 0.01
+Early stopping 15
+Gradient accumulation 16
+Seed 38
+max. Epochs 150
+Learning rate 5e-05
+Embedding dimension: 768
+Initialize dataloaders...
+Dataloaders are ready..
+cAItomorph(model=MixtureOfAggregators(
+  (experts): ModuleList(
+    (0-3): 4 x TransformerExpert(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=512, bias=True)
+        (1): ReLU()
+      )
+      (dropout): Dropout(p=0.1, inplace=False)
+      (transformer): TransformerBlocks(
+        (layers): ModuleList(
+          (0-1): 2 x ModuleList(
+            (0): PreNorm(
+              (fn): Attention(
+                (attend): Softmax(dim=-1)
+                (to_qkv): Linear(in_features=512, out_features=1536, bias=False)
+                (to_out): Sequential(
+                  (0): Linear(in_features=512, out_features=512, bias=True)
+                  (1): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+            (1): PreNorm(
+              (fn): FeedForward(
+                (net): Sequential(
+                  (0): Linear(in_features=512, out_features=1024, bias=True)
+                  (1): GELU(approximate='none')
+                  (2): Dropout(p=0.1, inplace=False)
+                  (3): Linear(in_features=1024, out_features=512, bias=True)
+                  (4): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (router_proj): Sequential(
+    (0): Linear(in_features=768, out_features=512, bias=True)
+    (1): ReLU()
+  )
+  (router_fc): Sequential(
+    (0): Linear(in_features=512, out_features=256, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=256, out_features=4, bias=True)
+  )
+  (head): Sequential(
+    (0): Linear(in_features=512, out_features=64, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=64, out_features=8, bias=True)
+  )
+))
+Setup complete.
+
+Using scheduler: ReduceLROnPlateau
+Starting training
+- ep: 1/150, loss: 1.864, acc: 0.291, balanced acc: 0.174,weighted_f1: 0.167, 27s, train
+- ep: 1/150, loss: 1.652, acc: 0.419, balanced acc: 0.308,weighted_f1: 0.302, 2s, val
+🔖  Saved new best model (metric=1.6515)
+- ep: 2/150, loss: 1.503, acc: 0.477, balanced acc: 0.375,weighted_f1: 0.417, 27s, train
+- ep: 2/150, loss: 1.363, acc: 0.517, balanced acc: 0.438,weighted_f1: 0.448, 3s, val
+🔖  Saved new best model (metric=1.3626)
+- ep: 3/150, loss: 1.205, acc: 0.575, balanced acc: 0.480,weighted_f1: 0.521, 27s, train
+- ep: 3/150, loss: 1.255, acc: 0.581, balanced acc: 0.493,weighted_f1: 0.524, 2s, val
+🔖  Saved new best model (metric=1.2548)
+- ep: 4/150, loss: 1.035, acc: 0.631, balanced acc: 0.545,weighted_f1: 0.599, 27s, train
+- ep: 4/150, loss: 1.237, acc: 0.618, balanced acc: 0.537,weighted_f1: 0.561, 3s, val
+🔖  Saved new best model (metric=1.2371)
+- ep: 5/150, loss: 0.921, acc: 0.675, balanced acc: 0.606,weighted_f1: 0.654, 26s, train
+- ep: 5/150, loss: 1.087, acc: 0.587, balanced acc: 0.508,weighted_f1: 0.563, 2s, val
+🔖  Saved new best model (metric=1.0867)
+- ep: 6/150, loss: 0.784, acc: 0.731, balanced acc: 0.680,weighted_f1: 0.721, 27s, train
+- ep: 6/150, loss: 1.064, acc: 0.627, balanced acc: 0.563,weighted_f1: 0.613, 2s, val
+🔖  Saved new best model (metric=1.0639)
+- ep: 7/150, loss: 0.672, acc: 0.782, balanced acc: 0.748,weighted_f1: 0.777, 26s, train
+- ep: 7/150, loss: 1.247, acc: 0.621, balanced acc: 0.554,weighted_f1: 0.592, 3s, val
+- ep: 8/150, loss: 0.553, acc: 0.829, balanced acc: 0.800,weighted_f1: 0.826, 26s, train
+- ep: 8/150, loss: 1.131, acc: 0.627, balanced acc: 0.575,weighted_f1: 0.624, 2s, val
+- ep: 9/150, loss: 0.439, acc: 0.869, balanced acc: 0.848,weighted_f1: 0.868, 28s, train
+- ep: 9/150, loss: 1.130, acc: 0.645, balanced acc: 0.588,weighted_f1: 0.619, 2s, val
+- ep: 10/150, loss: 0.311, acc: 0.920, balanced acc: 0.901,weighted_f1: 0.919, 25s, train
+- ep: 10/150, loss: 1.234, acc: 0.615, balanced acc: 0.534,weighted_f1: 0.596, 3s, val
+- ep: 11/150, loss: 0.217, acc: 0.963, balanced acc: 0.951,weighted_f1: 0.963, 27s, train
+- ep: 11/150, loss: 1.180, acc: 0.636, balanced acc: 0.578,weighted_f1: 0.621, 2s, val
+- ep: 12/150, loss: 0.189, acc: 0.970, balanced acc: 0.961,weighted_f1: 0.970, 26s, train
+- ep: 12/150, loss: 1.196, acc: 0.636, balanced acc: 0.577,weighted_f1: 0.619, 3s, val
+- ep: 13/150, loss: 0.175, acc: 0.976, balanced acc: 0.967,weighted_f1: 0.976, 26s, train
+- ep: 13/150, loss: 1.205, acc: 0.633, balanced acc: 0.576,weighted_f1: 0.617, 3s, val
+- ep: 14/150, loss: 0.167, acc: 0.976, balanced acc: 0.967,weighted_f1: 0.976, 27s, train
+- ep: 14/150, loss: 1.234, acc: 0.639, balanced acc: 0.584,weighted_f1: 0.622, 2s, val
+- ep: 15/150, loss: 0.158, acc: 0.976, balanced acc: 0.968,weighted_f1: 0.975, 27s, train
+- ep: 15/150, loss: 1.210, acc: 0.642, balanced acc: 0.584,weighted_f1: 0.627, 2s, val
+- ep: 16/150, loss: 0.150, acc: 0.978, balanced acc: 0.971,weighted_f1: 0.978, 27s, train
+- ep: 16/150, loss: 1.240, acc: 0.642, balanced acc: 0.589,weighted_f1: 0.625, 3s, val
+- ep: 17/150, loss: 0.142, acc: 0.982, balanced acc: 0.975,weighted_f1: 0.982, 27s, train
+- ep: 17/150, loss: 1.279, acc: 0.636, balanced acc: 0.580,weighted_f1: 0.616, 3s, val
+- ep: 18/150, loss: 0.137, acc: 0.984, balanced acc: 0.978,weighted_f1: 0.984, 26s, train
+- ep: 18/150, loss: 1.270, acc: 0.639, balanced acc: 0.578,weighted_f1: 0.620, 2s, val
+- ep: 19/150, loss: 0.129, acc: 0.982, balanced acc: 0.975,weighted_f1: 0.982, 26s, train
+- ep: 19/150, loss: 1.275, acc: 0.642, balanced acc: 0.589,weighted_f1: 0.625, 3s, val
+- ep: 20/150, loss: 0.125, acc: 0.984, balanced acc: 0.978,weighted_f1: 0.984, 27s, train
+- ep: 20/150, loss: 1.295, acc: 0.642, balanced acc: 0.584,weighted_f1: 0.624, 2s, val
+- ep: 21/150, loss: 0.119, acc: 0.983, balanced acc: 0.978,weighted_f1: 0.983, 26s, train
+- ep: 21/150, loss: 1.281, acc: 0.636, balanced acc: 0.579,weighted_f1: 0.622, 3s, val
+⏹️  Early-stopping triggered after 20 epochs
+train: loss=0.6090 acc=0.792 balAcc=0.756 f1w=0.786
+Saved gates for train to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_2/gates_train.npy
+val: loss=1.0639 acc=0.627 balAcc=0.563 f1w=0.613
+Saved gates for val to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_2/gates_val.npy
+test: loss=0.9027 acc=0.663 balAcc=0.600 f1w=0.644
+Saved gates for test to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_2/gates_test.npy
+Inference completed for splits: train, val, test
+✅ Saved 2043 patients to 'Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_2/patient_data.h5'.
+
+------------------------Final report--------------------------
+Runtime 0h32min12s
+Fold 2
+Architecture MixtureOfAggregators
+Data path /lustre/groups/labs/marr/qscd01/workspace/beluga_features_extracted/dinobloom-b
+Result folder Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_2
+Scheduler ReduceLROnPlateau
+Weight decay 0.01
+Early stopping 15
+Gradient accumulation 16
+Seed 38
+max. Epochs 150
+Learning rate 5e-05
+Embedding dimension: 768
+Initialize dataloaders...
+Dataloaders are ready..
+cAItomorph(model=MixtureOfAggregators(
+  (experts): ModuleList(
+    (0-3): 4 x TransformerExpert(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=512, bias=True)
+        (1): ReLU()
+      )
+      (dropout): Dropout(p=0.1, inplace=False)
+      (transformer): TransformerBlocks(
+        (layers): ModuleList(
+          (0-1): 2 x ModuleList(
+            (0): PreNorm(
+              (fn): Attention(
+                (attend): Softmax(dim=-1)
+                (to_qkv): Linear(in_features=512, out_features=1536, bias=False)
+                (to_out): Sequential(
+                  (0): Linear(in_features=512, out_features=512, bias=True)
+                  (1): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+            (1): PreNorm(
+              (fn): FeedForward(
+                (net): Sequential(
+                  (0): Linear(in_features=512, out_features=1024, bias=True)
+                  (1): GELU(approximate='none')
+                  (2): Dropout(p=0.1, inplace=False)
+                  (3): Linear(in_features=1024, out_features=512, bias=True)
+                  (4): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (router_proj): Sequential(
+    (0): Linear(in_features=768, out_features=512, bias=True)
+    (1): ReLU()
+  )
+  (router_fc): Sequential(
+    (0): Linear(in_features=512, out_features=256, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=256, out_features=4, bias=True)
+  )
+  (head): Sequential(
+    (0): Linear(in_features=512, out_features=64, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=64, out_features=8, bias=True)
+  )
+))
+Setup complete.
+
+Using scheduler: ReduceLROnPlateau
+Starting training
+- ep: 1/150, loss: 1.831, acc: 0.298, balanced acc: 0.181,weighted_f1: 0.192, 26s, train
+- ep: 1/150, loss: 1.593, acc: 0.404, balanced acc: 0.299,weighted_f1: 0.310, 3s, val
+🔖  Saved new best model (metric=1.5926)
+- ep: 2/150, loss: 1.498, acc: 0.469, balanced acc: 0.367,weighted_f1: 0.394, 26s, train
+- ep: 2/150, loss: 1.340, acc: 0.508, balanced acc: 0.401,weighted_f1: 0.448, 3s, val
+🔖  Saved new best model (metric=1.3395)
+- ep: 3/150, loss: 1.249, acc: 0.571, balanced acc: 0.474,weighted_f1: 0.519, 27s, train
+- ep: 3/150, loss: 1.151, acc: 0.587, balanced acc: 0.501,weighted_f1: 0.570, 3s, val
+🔖  Saved new best model (metric=1.1507)
+- ep: 4/150, loss: 1.047, acc: 0.637, balanced acc: 0.553,weighted_f1: 0.611, 27s, train
+- ep: 4/150, loss: 1.140, acc: 0.599, balanced acc: 0.533,weighted_f1: 0.570, 2s, val
+🔖  Saved new best model (metric=1.1398)
+- ep: 5/150, loss: 0.916, acc: 0.679, balanced acc: 0.612,weighted_f1: 0.665, 26s, train
+- ep: 5/150, loss: 1.089, acc: 0.615, balanced acc: 0.556,weighted_f1: 0.613, 3s, val
+🔖  Saved new best model (metric=1.0889)
+- ep: 6/150, loss: 0.794, acc: 0.728, balanced acc: 0.681,weighted_f1: 0.718, 27s, train
+- ep: 6/150, loss: 1.052, acc: 0.627, balanced acc: 0.571,weighted_f1: 0.612, 2s, val
+🔖  Saved new best model (metric=1.0519)
+- ep: 7/150, loss: 0.681, acc: 0.774, balanced acc: 0.734,weighted_f1: 0.770, 27s, train
+- ep: 7/150, loss: 1.157, acc: 0.642, balanced acc: 0.594,weighted_f1: 0.621, 2s, val
+- ep: 8/150, loss: 0.568, acc: 0.819, balanced acc: 0.790,weighted_f1: 0.815, 27s, train
+- ep: 8/150, loss: 1.166, acc: 0.612, balanced acc: 0.576,weighted_f1: 0.611, 2s, val
+- ep: 9/150, loss: 0.440, acc: 0.868, balanced acc: 0.847,weighted_f1: 0.867, 27s, train
+- ep: 9/150, loss: 1.173, acc: 0.639, balanced acc: 0.588,weighted_f1: 0.629, 2s, val
+- ep: 10/150, loss: 0.345, acc: 0.909, balanced acc: 0.892,weighted_f1: 0.908, 26s, train
+- ep: 10/150, loss: 1.318, acc: 0.615, balanced acc: 0.577,weighted_f1: 0.607, 3s, val
+- ep: 11/150, loss: 0.241, acc: 0.953, balanced acc: 0.948,weighted_f1: 0.953, 27s, train
+- ep: 11/150, loss: 1.212, acc: 0.642, balanced acc: 0.587,weighted_f1: 0.628, 2s, val
+- ep: 12/150, loss: 0.215, acc: 0.963, balanced acc: 0.957,weighted_f1: 0.962, 26s, train
+- ep: 12/150, loss: 1.218, acc: 0.633, balanced acc: 0.574,weighted_f1: 0.620, 2s, val
+- ep: 13/150, loss: 0.200, acc: 0.969, balanced acc: 0.964,weighted_f1: 0.969, 27s, train
+- ep: 13/150, loss: 1.228, acc: 0.636, balanced acc: 0.578,weighted_f1: 0.626, 2s, val
+- ep: 14/150, loss: 0.189, acc: 0.967, balanced acc: 0.961,weighted_f1: 0.967, 27s, train
+- ep: 14/150, loss: 1.233, acc: 0.630, balanced acc: 0.571,weighted_f1: 0.616, 2s, val
+- ep: 15/150, loss: 0.180, acc: 0.972, balanced acc: 0.969,weighted_f1: 0.972, 27s, train
+- ep: 15/150, loss: 1.250, acc: 0.642, balanced acc: 0.585,weighted_f1: 0.628, 3s, val
+- ep: 16/150, loss: 0.170, acc: 0.973, balanced acc: 0.970,weighted_f1: 0.973, 27s, train
+- ep: 16/150, loss: 1.253, acc: 0.633, balanced acc: 0.577,weighted_f1: 0.620, 3s, val
+- ep: 17/150, loss: 0.161, acc: 0.975, balanced acc: 0.972,weighted_f1: 0.975, 27s, train
+- ep: 17/150, loss: 1.243, acc: 0.648, balanced acc: 0.593,weighted_f1: 0.638, 2s, val
+- ep: 18/150, loss: 0.155, acc: 0.979, balanced acc: 0.974,weighted_f1: 0.979, 27s, train
+- ep: 18/150, loss: 1.282, acc: 0.636, balanced acc: 0.582,weighted_f1: 0.621, 2s, val
+- ep: 19/150, loss: 0.147, acc: 0.983, balanced acc: 0.980,weighted_f1: 0.983, 27s, train
+- ep: 19/150, loss: 1.288, acc: 0.636, balanced acc: 0.584,weighted_f1: 0.625, 2s, val
+- ep: 20/150, loss: 0.141, acc: 0.982, balanced acc: 0.979,weighted_f1: 0.982, 27s, train
+- ep: 20/150, loss: 1.293, acc: 0.639, balanced acc: 0.581,weighted_f1: 0.628, 3s, val
+- ep: 21/150, loss: 0.134, acc: 0.983, balanced acc: 0.980,weighted_f1: 0.983, 27s, train
+- ep: 21/150, loss: 1.302, acc: 0.645, balanced acc: 0.590,weighted_f1: 0.636, 3s, val
+⏹️  Early-stopping triggered after 20 epochs
+train: loss=0.6473 acc=0.784 balAcc=0.746 f1w=0.777
+Saved gates for train to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_3/gates_train.npy
+val: loss=1.0519 acc=0.627 balAcc=0.571 f1w=0.612
+Saved gates for val to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_3/gates_val.npy
+test: loss=0.9775 acc=0.663 balAcc=0.583 f1w=0.634
+Saved gates for test to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_3/gates_test.npy
+Inference completed for splits: train, val, test
+✅ Saved 2043 patients to 'Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_3/patient_data.h5'.
+
+------------------------Final report--------------------------
+Runtime 0h43min12s
+Fold 3
+Architecture MixtureOfAggregators
+Data path /lustre/groups/labs/marr/qscd01/workspace/beluga_features_extracted/dinobloom-b
+Result folder Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_3
+Scheduler ReduceLROnPlateau
+Weight decay 0.01
+Early stopping 15
+Gradient accumulation 16
+Seed 38
+max. Epochs 150
+Learning rate 5e-05
+Embedding dimension: 768
+Initialize dataloaders...
+Dataloaders are ready..
+cAItomorph(model=MixtureOfAggregators(
+  (experts): ModuleList(
+    (0-3): 4 x TransformerExpert(
+      (projection): Sequential(
+        (0): Linear(in_features=768, out_features=512, bias=True)
+        (1): ReLU()
+      )
+      (dropout): Dropout(p=0.1, inplace=False)
+      (transformer): TransformerBlocks(
+        (layers): ModuleList(
+          (0-1): 2 x ModuleList(
+            (0): PreNorm(
+              (fn): Attention(
+                (attend): Softmax(dim=-1)
+                (to_qkv): Linear(in_features=512, out_features=1536, bias=False)
+                (to_out): Sequential(
+                  (0): Linear(in_features=512, out_features=512, bias=True)
+                  (1): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+            (1): PreNorm(
+              (fn): FeedForward(
+                (net): Sequential(
+                  (0): Linear(in_features=512, out_features=1024, bias=True)
+                  (1): GELU(approximate='none')
+                  (2): Dropout(p=0.1, inplace=False)
+                  (3): Linear(in_features=1024, out_features=512, bias=True)
+                  (4): Dropout(p=0.1, inplace=False)
+                )
+              )
+              (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+            )
+          )
+        )
+      )
+      (norm): LayerNorm((512,), eps=1e-05, elementwise_affine=True)
+    )
+  )
+  (router_proj): Sequential(
+    (0): Linear(in_features=768, out_features=512, bias=True)
+    (1): ReLU()
+  )
+  (router_fc): Sequential(
+    (0): Linear(in_features=512, out_features=256, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=256, out_features=4, bias=True)
+  )
+  (head): Sequential(
+    (0): Linear(in_features=512, out_features=64, bias=True)
+    (1): ReLU()
+    (2): Linear(in_features=64, out_features=8, bias=True)
+  )
+))
+Setup complete.
+
+Using scheduler: ReduceLROnPlateau
+Starting training
+- ep: 1/150, loss: 1.799, acc: 0.342, balanced acc: 0.230,weighted_f1: 0.243, 27s, train
+- ep: 1/150, loss: 1.545, acc: 0.463, balanced acc: 0.368,weighted_f1: 0.395, 3s, val
+🔖  Saved new best model (metric=1.5449)
+- ep: 2/150, loss: 1.406, acc: 0.492, balanced acc: 0.393,weighted_f1: 0.435, 27s, train
+- ep: 2/150, loss: 1.266, acc: 0.543, balanced acc: 0.457,weighted_f1: 0.500, 3s, val
+🔖  Saved new best model (metric=1.2665)
+- ep: 3/150, loss: 1.165, acc: 0.581, balanced acc: 0.492,weighted_f1: 0.533, 26s, train
+- ep: 3/150, loss: 1.201, acc: 0.571, balanced acc: 0.490,weighted_f1: 0.529, 3s, val
+🔖  Saved new best model (metric=1.2007)
+- ep: 4/150, loss: 0.994, acc: 0.648, balanced acc: 0.578,weighted_f1: 0.624, 27s, train
+- ep: 4/150, loss: 1.103, acc: 0.610, balanced acc: 0.532,weighted_f1: 0.578, 2s, val
+🔖  Saved new best model (metric=1.1028)
+- ep: 5/150, loss: 0.874, acc: 0.695, balanced acc: 0.638,weighted_f1: 0.681, 27s, train
+- ep: 5/150, loss: 1.053, acc: 0.610, balanced acc: 0.535,weighted_f1: 0.592, 2s, val
+🔖  Saved new best model (metric=1.0533)
+- ep: 6/150, loss: 0.781, acc: 0.732, balanced acc: 0.691,weighted_f1: 0.724, 27s, train
+- ep: 6/150, loss: 1.095, acc: 0.610, balanced acc: 0.563,weighted_f1: 0.608, 3s, val
+- ep: 7/150, loss: 0.679, acc: 0.767, balanced acc: 0.725,weighted_f1: 0.759, 26s, train
+- ep: 7/150, loss: 1.056, acc: 0.641, balanced acc: 0.562,weighted_f1: 0.622, 3s, val
+- ep: 8/150, loss: 0.557, acc: 0.828, balanced acc: 0.795,weighted_f1: 0.823, 27s, train
+- ep: 8/150, loss: 1.079, acc: 0.620, balanced acc: 0.553,weighted_f1: 0.608, 3s, val
+- ep: 9/150, loss: 0.455, acc: 0.861, balanced acc: 0.840,weighted_f1: 0.858, 27s, train
+- ep: 9/150, loss: 1.145, acc: 0.613, balanced acc: 0.556,weighted_f1: 0.611, 3s, val
+- ep: 10/150, loss: 0.323, acc: 0.917, balanced acc: 0.906,weighted_f1: 0.916, 27s, train
+- ep: 10/150, loss: 1.088, acc: 0.638, balanced acc: 0.566,weighted_f1: 0.628, 3s, val
+- ep: 11/150, loss: 0.289, acc: 0.932, balanced acc: 0.919,weighted_f1: 0.931, 27s, train
+- ep: 11/150, loss: 1.101, acc: 0.641, balanced acc: 0.563,weighted_f1: 0.629, 3s, val
+- ep: 12/150, loss: 0.276, acc: 0.939, balanced acc: 0.929,weighted_f1: 0.938, 27s, train
+- ep: 12/150, loss: 1.091, acc: 0.641, balanced acc: 0.567,weighted_f1: 0.631, 2s, val
+- ep: 13/150, loss: 0.267, acc: 0.940, balanced acc: 0.930,weighted_f1: 0.939, 27s, train
+- ep: 13/150, loss: 1.100, acc: 0.641, balanced acc: 0.563,weighted_f1: 0.629, 2s, val
+- ep: 14/150, loss: 0.250, acc: 0.949, balanced acc: 0.940,weighted_f1: 0.948, 26s, train
+- ep: 14/150, loss: 1.113, acc: 0.641, balanced acc: 0.562,weighted_f1: 0.628, 3s, val
+- ep: 15/150, loss: 0.242, acc: 0.950, balanced acc: 0.939,weighted_f1: 0.949, 27s, train
+- ep: 15/150, loss: 1.108, acc: 0.632, balanced acc: 0.553,weighted_f1: 0.621, 3s, val
+- ep: 16/150, loss: 0.230, acc: 0.953, balanced acc: 0.943,weighted_f1: 0.952, 28s, train
+- ep: 16/150, loss: 1.119, acc: 0.644, balanced acc: 0.569,weighted_f1: 0.634, 3s, val
+- ep: 17/150, loss: 0.218, acc: 0.960, balanced acc: 0.952,weighted_f1: 0.960, 27s, train
+- ep: 17/150, loss: 1.126, acc: 0.641, balanced acc: 0.565,weighted_f1: 0.628, 2s, val
+- ep: 18/150, loss: 0.215, acc: 0.960, balanced acc: 0.952,weighted_f1: 0.960, 26s, train
+- ep: 18/150, loss: 1.130, acc: 0.638, balanced acc: 0.561,weighted_f1: 0.627, 3s, val
+- ep: 19/150, loss: 0.198, acc: 0.968, balanced acc: 0.961,weighted_f1: 0.968, 27s, train
+- ep: 19/150, loss: 1.135, acc: 0.647, balanced acc: 0.572,weighted_f1: 0.635, 2s, val
+- ep: 20/150, loss: 0.192, acc: 0.966, balanced acc: 0.959,weighted_f1: 0.966, 27s, train
+- ep: 20/150, loss: 1.161, acc: 0.626, balanced acc: 0.542,weighted_f1: 0.610, 2s, val
+⏹️  Early-stopping triggered after 19 epochs
+train: loss=0.7443 acc=0.737 balAcc=0.690 f1w=0.720
+Saved gates for train to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_4/gates_train.npy
+val: loss=1.0533 acc=0.610 balAcc=0.535 f1w=0.592
+Saved gates for val to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_4/gates_val.npy
+test: loss=0.9760 acc=0.655 balAcc=0.585 f1w=0.625
+Saved gates for test to Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_4/gates_test.npy
+Inference completed for splits: train, val, test
+✅ Saved 2043 patients to 'Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_4/patient_data.h5'.
+
+------------------------Final report--------------------------
+Runtime 0h53min46s
+Fold 4
+Architecture MixtureOfAggregators
+Data path /lustre/groups/labs/marr/qscd01/workspace/beluga_features_extracted/dinobloom-b
+Result folder Beluga_full/4_experts/Results_5fold_testfixed_dinobloom-b_MixtureOfAggregators_shared_adapter_dense_topk1_localheadFalse_router_arch_mlp_seed381/fold_4
+Scheduler ReduceLROnPlateau
+Weight decay 0.01
+Early stopping 15
+Gradient accumulation 16
+Seed 38
+max. Epochs 150
+Learning rate 5e-05

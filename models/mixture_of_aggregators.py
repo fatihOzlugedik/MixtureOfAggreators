@@ -78,7 +78,7 @@ class MixtureOfAggregators(nn.Module):
             input_dim=input_dim,
             dim=dim, depth=depth, heads=heads, mlp_dim=mlp_dim,
             dim_head=dim_head, dropout=dropout, emb_dropout=emb_dropout,
-            pool=pool, pos_enc=pos_enc, mode=mode,
+            pool=pool, pos_enc=pos_enc, mode='separate',
             shared_proj=None,               # decouple from experts
             use_local_head=True
         )
@@ -129,23 +129,48 @@ class MixtureOfAggregators(nn.Module):
             return latent, logits, g_soft
 
         elif self.router_style == "topk":
-            # Only top-k experts contribute
+            k = min(k, self.num_experts)
+
+            # Pick top-k experts per sample
             topk = g_soft.topk(k, dim=-1)
-            idx = topk.indices
-            weights = topk.values / (topk.values.sum(dim=-1, keepdim=True) + 1e-8)
+            idx = topk.indices                  # [B, k]
+            weights = topk.values               # [B, k]
+            weights = weights / (weights.sum(dim=-1, keepdim=True) + 1e-8)
 
             z_list = []
+            if self.experts_use_local_head:
+                logit_list = []
+
             for b in range(B):
                 z_b = 0
+                if self.experts_use_local_head:
+                    logits_b = 0
+
                 for j in range(k):
                     e_idx = idx[b, j].item()
-                    latent, _ = self.experts[e_idx](x[b].unsqueeze(0))
-                    z_b += weights[b, j] * latent
+                    w = weights[b, j]
+
+                    # Run only the chosen experts for this sample
+                    latent_bj, logit_bj = self.experts[e_idx](x[b].unsqueeze(0))  # latent: [1, D], logit: [1, C] (if local head)
+
+                    # Always blend latents to return a representative embedding
+                    z_b = z_b + w * latent_bj
+
+                    # If local heads are enabled, blend logits directly
+                    if self.experts_use_local_head:
+                        if logit_bj is None:
+                            raise RuntimeError("experts_use_local_head=True but expert returned logits=None.")
+                        logits_b = logits_b + w * logit_bj
+
                 z_list.append(z_b)
-            latent = torch.stack(z_list, dim=0)  # [B, D]
+                if self.experts_use_local_head:
+                    logit_list.append(logits_b)
 
-            logits = self.head(latent)
+            latent = torch.stack(z_list, dim=0).squeeze(1)   # [B, D]
+
+            if self.experts_use_local_head:
+                logits = torch.cat(logit_list, dim=0)        # [B, C] (weighted sum of top-k expert logits)
+            else:
+                logits = self.head(latent)                   # [B, C] (global head as before)
+
             return latent, logits, g_soft
-
-        else:
-            raise ValueError(f"Unknown router_style {self.router_style}")
