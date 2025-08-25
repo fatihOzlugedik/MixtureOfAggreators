@@ -19,3 +19,10 @@ Thumbs.db
 results*/
 *.ckpt/
 Beluga_full/
+Beluga_full_repeat/
+BRACS_3Class/
+Bracs_baseline/
+data_cross_val_3_classes_Bracs/
+data_cross_val_8_classes_Beluga
+logs*/
+

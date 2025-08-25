@@ -6,7 +6,7 @@ import os
 class MILDataset(Dataset):
     '''Unified MLL MIL dataset for both .pt and .h5 formats'''
 
-    def __init__(self, path_to_data, data_files, ext="h5"):
+    def __init__(self, path_to_data, data_files, ext="pt"):
         """
         Args:
             path_to_data (str): Path to directory containing patient .pt or .h5 files.
@@ -73,6 +73,6 @@ def read_h5file(file_name):
 def read_ptfile(file_name):
     data = torch.load(file_name, map_location=torch.device("cpu"))
     features = data['features']
-    label = data['labels']
-    img_paths = data['image_paths']
+    label = ['dummy']
+    img_paths = ['dummy']
     return features, label, img_paths

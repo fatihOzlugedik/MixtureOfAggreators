@@ -12,7 +12,7 @@ except Exception:
     _HAS_DFI = False
 
 # ===================== CONFIG =====================
-ROOT = Path("/lustre/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/Beluga_full/4_experts")
+ROOT = Path("/lustre/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/Bracs_baseline/1_experts")
 RESULT_DIR_PATTERN = r"^Results_5fold_.*"  # tweak if needed
 CONF_FNAME = "test_conf_matrix.npy"        # single-head CM per fold
 GATES_FNAME = "gates_test.npy"             # per-sample gating probs per fold
