@@ -70,6 +70,21 @@ def main():
                         help="Number of experts to use")
     parser.add_argument('--router_type', choices=['linear', 'mlp', 'transformer'],
                         default='linear', help="Router type")
+    # Load-balancing loss
+    parser.add_argument('--use_lb_loss', action='store_true',
+                        help='Enable load-balancing loss on router gates')
+    parser.add_argument('--lb_coef', type=float, default=0.0,
+                        help='Coefficient for load-balancing loss (ignored if --use_lb_loss not set)')
+
+    # Gumbel-softmax routing (training only)
+    parser.add_argument('--use_gumbel', action='store_true',
+                        help='Use Gumbel-softmax noise in router during training')
+    parser.add_argument('--gumbel_tau_start', type=float, default=2.0,
+                        help='Initial Gumbel-Softmax temperature (higher=softer)')
+    parser.add_argument('--gumbel_tau_min', type=float, default=0.5,
+                        help='Minimum temperature for annealing')
+    parser.add_argument('--gumbel_decay', type=float, default=0.95,
+                        help='Exponential decay per epoch: tau = max(min, start * decay^epoch)')
 
     args = parser.parse_args()
 
@@ -88,7 +103,7 @@ def main():
     backbone_name = data_path.rstrip('/').split('/')[-1]
     save_root = Path(args.saving_name)
 
-    RESULT_FOLDER_ROOT = f"Results_5fold_testfixed_{backbone_name}_{args.arch}_{args.expert_mode}_{args.router_style}_topk{args.topk}_localhead{args.use_local_head}_router_arch_{args.router_type}_seed{seed}"
+    RESULT_FOLDER_ROOT = f"Results_5fold_testfixed_{backbone_name}_{args.arch}_{args.expert_mode}_{args.router_style}_topk{args.topk}_localhead{args.use_local_head}_router_arch_{args.router_type}_seed{seed}_lb{args.lb_coef}_gumbel{args.use_gumbel}"
 
     RESULT_FOLDER_ROOT = Path(RESULT_FOLDER_ROOT)
     print('Results will be saved under: ', RESULT_FOLDER_ROOT)
@@ -123,15 +138,15 @@ def main():
 
     class_count = len(label_to_diagnose)
 
-    print('Reading files from: ', os.path.join(csv_root, 'data_fold_0'))
-    t_files = pd.read_csv(os.path.join(csv_root, 'data_fold_0', "train.csv"))
-    v_files = pd.read_csv(os.path.join(csv_root, 'data_fold_0', "val.csv"))
+    print('Reading files from: ', os.path.join(csv_root, 'data_fold_1'))
+    t_files = pd.read_csv(os.path.join(csv_root, 'data_fold_1', "train.csv"))
+    v_files = pd.read_csv(os.path.join(csv_root, 'data_fold_1', "val.csv"))
     train_val_files = pd.concat([t_files, v_files], ignore_index=True)
-    test_files = pd.read_csv(os.path.join(csv_root, 'data_fold_0', "test.csv"))
+    test_files = pd.read_csv(os.path.join(csv_root, 'data_fold_1', "test.csv"))
 
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=seed)
 
-    for fold, (train_index, val_index) in enumerate(skf.split(train_val_files, train_val_files['diagnose'])):
+    for fold, (train_index, val_index) in enumerate(skf.split(train_val_files, train_val_files['labels'])):
         train_files = train_val_files.iloc[train_index].reset_index(drop=True)
         val_files = train_val_files.iloc[val_index].reset_index(drop=True)
 
@@ -183,6 +198,10 @@ def main():
         sched_builder = BuildScheduler(optimizer, args)
         print("Using scheduler:", sched_builder.name)
 
+        # Determine effective LB coefficient based on toggle
+        # Backward-compatible: if lb_coef > 0 provided without the toggle, enable LB
+        effective_lb_coef = float(args.lb_coef) if (bool(args.use_lb_loss) or float(args.lb_coef) > 0.0) else 0.0
+
         # launch training
         train_obj = ModelTrainer(
             model=model,
@@ -193,8 +212,16 @@ def main():
             class_count=class_count,
             device=device,
             early_stop=int(args.es),
-            save_path=RESULT_FOLDER
+            save_path=RESULT_FOLDER,
+            lb_coef=effective_lb_coef,
+            # Gumbel routing config
+            use_gumbel=bool(args.use_gumbel),
+            gumbel_tau_start=float(args.gumbel_tau_start),
+            gumbel_tau_min=float(args.gumbel_tau_min),
+            gumbel_decay=float(args.gumbel_decay)
         )
+        print(f"Routing config: use_gumbel={bool(args.use_gumbel)}, tau_start={float(args.gumbel_tau_start)}, tau_min={float(args.gumbel_tau_min)}, decay={float(args.gumbel_decay)}")
+        print(f"LB loss: enabled={effective_lb_coef > 0.0}, lb_coef={effective_lb_coef}")
         print("Starting training")
 
         model, conf_matrix = train_obj.launch_training()

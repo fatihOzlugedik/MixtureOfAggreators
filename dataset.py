@@ -6,11 +6,11 @@ import os
 class MILDataset(Dataset):
     '''Unified MLL MIL dataset for both .pt and .h5 formats'''
 
-    def __init__(self, path_to_data, data_files, ext="pt"):
+    def __init__(self, path_to_data, data_files, ext="h5"):
         """
         Args:
             path_to_data (str): Path to directory containing patient .pt or .h5 files.
-            data_files (pd.DataFrame): DataFrame with columns ['patient_files', 'labels'].
+            data_files (pd.DataFrame): DataFrame with columns ['patient_names', 'labels'].
             ext (str): File extension type to use ('pt' or 'h5').
         """
         assert ext in ["pt", "h5"], f"Unsupported file extension: {ext}"
@@ -30,7 +30,7 @@ class MILDataset(Dataset):
             return 0
         
         # Load the first file to determine feature dimension
-        patient_id = self.data_files.patient_files[0]
+        patient_id = self.data_files.patient_name[0]
         file_name = patient_id + f".{self.ext}"
         file_path = os.path.join(self.path_to_data, file_name)
 
@@ -42,7 +42,7 @@ class MILDataset(Dataset):
         return features.shape[1]
 
     def __getitem__(self, idx):
-        patient_id = self.data_files.patient_files[idx]
+        patient_id = self.data_files.patient_name[idx]
         file_name = patient_id + f".{self.ext}"
         file_path = os.path.join(self.path_to_data, file_name)
 

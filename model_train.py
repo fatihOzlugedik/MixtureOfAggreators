@@ -32,7 +32,13 @@ class ModelTrainer:
             device,
             save_path,
             early_stop=20,
-            grad_accum=20):
+            grad_accum=20,
+            lb_coef: float = 0.0,
+            # Gumbel routing config
+            use_gumbel: bool = False,
+            gumbel_tau_start: float = 1.0,
+            gumbel_tau_min: float = 1.0,
+            gumbel_decay: float = 1.0):
         self.model = model
         self.dataloaders = dataloaders
         self.epochs = epochs
@@ -48,6 +54,14 @@ class ModelTrainer:
         self.metric_mode = (
             "max" if self.scheduler_name == "ReduceLROnPlateau" and self.scheduler.mode == "max" else "min"
         )
+        # coefficient for load-balancing penalty on router gates
+        self.lb_coef = float(lb_coef) if lb_coef is not None else 0.0
+
+        # Gumbel routing
+        self.use_gumbel = bool(use_gumbel)
+        self.gumbel_tau_start = float(gumbel_tau_start)
+        self.gumbel_tau_min = float(gumbel_tau_min)
+        self.gumbel_decay = float(gumbel_decay)
 
     def launch_training(self):
         '''initializes training process.'''
@@ -57,8 +71,13 @@ class ModelTrainer:
         _no_improve_epochs = 0
 
         for ep in range(self.epochs):
+            # compute current Gumbel temperature (exponential annealing)
+            if self.use_gumbel:
+                current_tau = max(self.gumbel_tau_min, self.gumbel_tau_start * (self.gumbel_decay ** ep))
+            else:
+                current_tau = 1.0
             # perform train/val iteration
-            val_metrics = self._run_epoch(ep, backprop_every=self.grad_accum)
+            val_metrics = self._run_epoch(ep, backprop_every=self.grad_accum, train_temp=current_tau, use_gumbel=self.use_gumbel)
             torch.cuda.empty_cache()
             target_metric = val_metrics["weighted_f1"] if self.metric_mode == "max" else val_metrics["val_loss"]
             is_better = (target_metric > best_metric) if self.metric_mode == "max" else (target_metric < best_metric)
@@ -95,7 +114,7 @@ class ModelTrainer:
         return self.model, test_metrics['conf_matrix']
     
 
-    def _run_epoch(self, epoch, backprop_every=20):
+    def _run_epoch(self, epoch, backprop_every=20, train_temp: float = 1.0, use_gumbel: bool = False):
         '''runs one epoch of training and validation. Returns the loss, accuracy and f1 score for the epoch.'''
         # Training
         train_loss = 0
@@ -111,15 +130,31 @@ class ModelTrainer:
             # send to gpu
             label = label.to(self.device)
             bag = bag.to(self.device)
-            prediction = self.model(bag)
+            # Request gates for optional load-balancing loss (works for MoA; others return gates=None)
+            latent, prediction, gates = self.model(
+                bag,
+                return_latent=True,
+                return_gates=True,
+                temp=train_temp,
+                use_gumbel=use_gumbel,
+            )
 
             loss_func = nn.CrossEntropyLoss()
 
             #loss_out = loss_func(prediction, label[0])
             if prediction.dim() == 3:
-                prediction=prediction.squeeze(0)  # Ensure prediction is 2D
-             
+                prediction = prediction.squeeze(0)  # Ensure prediction is 2D
+
             loss_out = loss_func(prediction, label)
+
+            # --- Load-balancing loss on router gates (importance-based, Shazeer-style) ---
+            # gates shape: [B, E]; encourage uniform average usage across experts
+            if self.lb_coef > 0.0 and gates is not None:
+                # mean over batch (B) → importance per expert
+                imp = gates.mean(dim=0)  # [E]
+                E = gates.size(1)
+                lb_loss = E * torch.sum(imp * imp)
+                loss_out = loss_out + self.lb_coef * lb_loss
             train_loss += loss_out.item()
 
             loss_out.backward()
@@ -158,7 +193,7 @@ class ModelTrainer:
                 # send to gpu
                 label = label.to(self.device)
                 bag = bag.to(self.device)
-                prediction = self.model(bag)
+                prediction = self.model(bag, temp=1.0, use_gumbel=False)
 
                 loss_func = nn.CrossEntropyLoss()
                 if prediction.dim() == 3:

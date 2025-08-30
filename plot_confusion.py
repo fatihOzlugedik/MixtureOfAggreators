@@ -7,7 +7,7 @@ def get_label_names_from_csv(df):
     """Get a mapping of labels to original names from a CSV file."""
     #df = pd.read_csv(csv_path)
     # Create a dictionary where keys are labels and values are their corresponding names
-    label_name_mapping = dict(zip(df['label'], df['diagnose']))
+    label_name_mapping = dict(zip(df['label_id'], df['label_name']))
     # Return the names in the order of labels (0, 1, 2, ...)
     return [label_name_mapping[i] for i in sorted(label_name_mapping.keys())]
 

@@ -25,4 +25,8 @@ Bracs_baseline/
 data_cross_val_3_classes_Bracs/
 data_cross_val_8_classes_Beluga
 logs*/
-
+logs_*/
+AML_*
+Beluga_*
+logs_*
+logs_*

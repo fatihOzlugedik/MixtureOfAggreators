@@ -29,7 +29,7 @@ class cAItomorph(nn.Module):
             )
         self.save_gates = save_gates
  
-    def forward(self, embeddings, return_latent=False, return_gates=False):
+    def forward(self, embeddings, return_latent=False, return_gates=False, temp=None, use_gumbel=None):
         if embeddings.dim() == 1:
             embeddings = embeddings.unsqueeze(0).unsqueeze(0)
         elif embeddings.dim() == 2:
@@ -37,7 +37,16 @@ class cAItomorph(nn.Module):
         elif embeddings.dim() != 3:
             raise ValueError(f"Unexpected embedding shape: {embeddings.shape}")
 
-        out = self.model(embeddings)
+        # Pass optional routing controls if supported by the underlying model
+        kwargs = {}
+        if temp is not None:
+            kwargs['temp'] = temp
+        if use_gumbel is not None:
+            kwargs['use_gumbel'] = use_gumbel
+        try:
+            out = self.model(embeddings, **kwargs)
+        except TypeError:
+            out = self.model(embeddings)
         if len(out) == 3:
             latent, logits, gates = out
         else:

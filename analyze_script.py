@@ -1,10 +1,13 @@
 import re
+import ast
 from pathlib import Path
+from typing import Optional
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# dataframe_image is optional; we guard its usage
+# Optional pretty export
 try:
     import dataframe_image as dfi
     _HAS_DFI = True
@@ -12,407 +15,494 @@ except Exception:
     _HAS_DFI = False
 
 # ===================== CONFIG =====================
-ROOT = Path("/lustre/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/Bracs_baseline/1_experts")
-RESULT_DIR_PATTERN = r"^Results_5fold_.*"  # tweak if needed
-CONF_FNAME = "test_conf_matrix.npy"        # single-head CM per fold
-GATES_FNAME = "gates_test.npy"             # per-sample gating probs per fold
-OUTDIR_NAME = "summary_single_head"        # output subdir inside each result dir
-GLOBAL_OUTDIR = ROOT / "summary_global"    # global summary folder
+ROOT = Path("/lustre/groups/labs/marr/qscd01/workspace/fatih.oezluegedik/mixture_of_aggregators/Beluga_all_ablations")
+EXPERT_DIR_PATTERN = r"^\d+_experts$"
+RESULT_DIR_PATTERN = r"^Results_5fold_.*"
 
-# Optional pretty labels for CM (default: 0..C-1)
-LEVEL_LABELS = None  # e.g., ["ClassA", "ClassB", "ClassC"]
+VAL_CSV_NAME  = "metadata_results_val.csv"
+TEST_CSV_NAME = "metadata_results_test.csv"
 
-# ===================== HELPERS =====================
-def find_result_dirs(root: Path, name_pattern=RESULT_DIR_PATTERN):
-    dirs = [d for d in root.iterdir() if d.is_dir() and re.match(name_pattern, d.name)]
-    if not dirs:
-        print(f"[WARN] No result directories found under {root}")
-    return sorted(dirs)
+# Fallback CMs only if CSVs are missing
+CONF_TEST_FNAME = "test_conf_matrix.npy"
+CONF_VAL_FNAME  = "val_conf_matrix.npy"
 
-def find_folds(base: Path):
-    folds = sorted([p for p in base.glob("fold_*") if p.is_dir()],
-                   key=lambda x: int(re.findall(r"\d+", x.name)[0]) if re.findall(r"\d+", x.name) else 999)
-    return folds
+# Gates (optional but recommended)
+GATES_TEST_FNAME = "gates_test.npy"
+GATES_VAL_FNAME  = "gates_val.npy"
 
-def load_stack_square(folds, filename):
-    """Load square matrices (e.g., confusion matrices) from each fold and stack -> (n_folds, C, C)."""
-    mats, ref_shape, paths = [], None, []
-    for fd in folds:
-        fpath = fd / filename
-        if not fpath.exists():
-            print(f"[WARN] Missing {fpath}")
-            continue
-        try:
-            cm = np.load(fpath)
-        except Exception as e:
-            print(f"[WARN] Failed to load {fpath}: {e}")
-            continue
-        if cm.ndim != 2 or cm.shape[0] != cm.shape[1]:
-            print(f"[WARN] {fpath} must be a square 2D matrix, got {cm.shape} — skipping this fold.")
-            continue
-        if ref_shape is None:
-            ref_shape = cm.shape
-        elif cm.shape != ref_shape:
-            print(f"[WARN] Shape mismatch for {filename}: expected {ref_shape}, found {cm.shape} at {fpath} — skipping.")
-            continue
-        mats.append(cm.astype(float))
-        paths.append(fpath)
-    if not mats:
-        # IMPORTANT: always return a tuple
-        return None, []
-    return np.stack(mats, axis=0), paths  # (n_folds, C, C)
+OUTDIR_NAME = "summary_single_head"
+GLOBAL_OUTDIR = None
 
-def load_gates(folds, filename, reduce_k: str = "auto"):
-    """
-    Load gate arrays per fold and return a list of (N, E) row-normalized arrays.
-    Accepts shapes: (N,E), (E,), (N,1,E), (N,K,E) with K>1 (mean/sum over K).
-    """
-    arrs, paths = [], []
-    for fd in folds:
-        fpath = fd / filename
-        if not fpath.exists():
-            print(f"[WARN] Missing {fpath}")
-            continue
-        try:
-            g = np.load(fpath)
-        except Exception as e:
-            print(f"[WARN] Failed to load {fpath}: {e}")
-            continue
+LEVEL_LABELS = None  # e.g. ["A","B","C"]
 
-        # --- Normalize shapes to (N, E) ---
-        try:
-            if g.ndim == 1:
-                g = g[None, :]
-            elif g.ndim == 2:
-                pass
-            elif g.ndim == 3:
-                if g.shape[1] == 1:
-                    g = np.squeeze(g, axis=1)
-                else:
-                    if reduce_k in ("auto", "mean"):
-                        g = g.mean(axis=1)
-                    elif reduce_k == "sum":
-                        g = g.sum(axis=1)
-                    else:
-                        print(f"[WARN] Unknown reduce_k='{reduce_k}' for gates with shape {g.shape} — skipping.")
-                        continue
-            else:
-                print(f"[WARN] {fpath} has unsupported ndim={g.ndim}, shape={g.shape} — skipping.")
-                continue
-
-            if g.ndim != 2:
-                print(f"[WARN] {fpath} could not be brought to (N, E); got shape {g.shape} — skipping.")
-                continue
-        except Exception as e:
-            print(f"[WARN] Failed to process shape for {fpath}: {e} — skipping.")
-            continue
-
-        g = g.astype(float)
-        row_sums = g.sum(axis=1, keepdims=True)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            g = np.divide(g, row_sums, out=np.zeros_like(g), where=row_sums > 0)
-
-        arrs.append(g)
-        paths.append(fpath)
-
-    if not arrs:
-        return None, []
-    return arrs, paths
-
-def row_normalize(cm):
-    cm = cm.astype(float)
-    row_sums = cm.sum(axis=1, keepdims=True)
-    with np.errstate(divide="ignore", invalid="ignore"):
-        return np.divide(cm, row_sums, out=np.zeros_like(cm), where=row_sums > 0)
+# ===================== SIMPLE HELPERS =====================
+def ensure_outdir(d: Path):
+    d.mkdir(parents=True, exist_ok=True)
+    return d
 
 def try_export_img(df: pd.DataFrame, path: Path):
     if not _HAS_DFI:
-        print(f"[INFO] dataframe_image not available; skipping image export for {path.name}")
         return
     try:
         dfi.export(df, path)
     except Exception as e:
         print(f"[WARN] Failed to export image {path}: {e}")
 
-def heatmap_mean_std(mean_cm, std_cm, labels, title, save_path):
-    try:
-        fig, ax = plt.subplots(figsize=(1.1*mean_cm.shape[1]+2.5, 1.1*mean_cm.shape[0]+2.5), dpi=200)
-        im = ax.imshow(mean_cm, cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0)
-        ax.set_title(f"{title} normalised CM (mean ± SD)")
-        ax.set_xlabel("Predicted")
-        ax.set_ylabel("True")
-        ax.set_xticks(range(len(labels)))
-        ax.set_yticks(range(len(labels)))
-        ax.set_xticklabels(labels, rotation=45, ha="right")
-        ax.set_yticklabels(labels)
+def find_result_dirs(root: Path):
+    return sorted([d for d in root.iterdir() if d.is_dir() and re.match(RESULT_DIR_PATTERN, d.name)])
 
-        for i in range(mean_cm.shape[0]):
-            for j in range(mean_cm.shape[1]):
-                m = mean_cm[i, j]
-                s = std_cm[i, j]
-                ax.text(j, i, f"{m:.2f}\n±{s:.2f}", ha="center", va="center", fontsize=9, color="black")
+def find_folds(base: Path):
+    return sorted(
+        [p for p in base.glob("fold_*") if p.is_dir()],
+        key=lambda x: int(re.findall(r"\d+", x.name)[0]) if re.findall(r"\d+", x.name) else 999
+    )
 
-        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-        cbar.set_label("mean")
-        fig.tight_layout()
-        fig.savefig(save_path, bbox_inches="tight")
-        plt.close(fig)
-    except Exception as e:
-        print(f"[WARN] Failed to save heatmap {save_path}: {e}")
+def discover_search_roots(root: Path):
+    expert_dirs = sorted(
+        [d for d in root.iterdir() if d.is_dir() and re.match(EXPERT_DIR_PATTERN, d.name)],
+        key=lambda p: int(re.findall(r"\d+", p.name)[0]) if re.findall(r"\d+", p.name) else 10**9
+    )
+    if expert_dirs:
+        print(f"[INFO] Discovered {len(expert_dirs)} expert dirs under {root}")
+        return root, expert_dirs
+    if re.match(EXPERT_DIR_PATTERN, root.name):
+        print(f"[INFO] ROOT is a single expert dir: {root}")
+        return root.parent, [root]
+    print(f"[INFO] Treating {root} as a flat results directory.")
+    return root, [root]
 
-def metrics_from_cm(cm):
+# ===================== METRICS / CMs =====================
+def row_normalize(cm: np.ndarray) -> np.ndarray:
+    cm = cm.astype(float)
+    rs = cm.sum(axis=1, keepdims=True)
+    with np.errstate(divide="ignore", invalid="ignore"):
+        return np.divide(cm, rs, out=np.zeros_like(cm), where=rs > 0)
+
+def metrics_from_cm(cm: np.ndarray):
     cm = cm.astype(float)
     total = cm.sum()
     actual = cm.sum(axis=1)
     pred = cm.sum(axis=0)
     tp = np.diag(cm)
-
     with np.errstate(divide="ignore", invalid="ignore"):
         recall = np.divide(tp, actual, out=np.zeros_like(tp), where=actual > 0)
         bacc = float(np.mean(recall)) if recall.size else 0.0
-
         precision = np.divide(tp, pred, out=np.zeros_like(tp), where=pred > 0)
         f1_cls = np.divide(2 * precision * recall, precision + recall,
                            out=np.zeros_like(tp), where=(precision + recall) > 0)
-
         w = actual.sum()
         weights = np.divide(actual, w, out=np.zeros_like(actual), where=w > 0)
         wF1 = float((f1_cls * weights).sum()) if weights.sum() > 0 else 0.0
-
     acc = float(tp.sum() / total) if total > 0 else 0.0
     return bacc, wF1, acc
 
-def ensure_outdir(dirpath: Path):
-    dirpath.mkdir(parents=True, exist_ok=True)
-    return dirpath
+def heatmap_mean_std(mean_cm, std_cm, labels, title, save_path):
+    try:
+        fig, ax = plt.subplots(figsize=(1.1*mean_cm.shape[1]+2.5, 1.1*mean_cm.shape[0]+2.5), dpi=200)
+        im = ax.imshow(mean_cm, cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0)
+        ax.set_title(f"{title} normalised CM (mean ± SD)")
+        ax.set_xlabel("Predicted"); ax.set_ylabel("True")
+        ax.set_xticks(range(len(labels))); ax.set_yticks(range(len(labels)))
+        ax.set_xticklabels(labels, rotation=45, ha="right"); ax.set_yticklabels(labels)
+        for i in range(mean_cm.shape[0]):
+            for j in range(mean_cm.shape[1]):
+                ax.text(j, i, f"{mean_cm[i,j]:.2f}\n±{std_cm[i,j]:.2f}", ha="center", va="center", fontsize=9)
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04); cbar.set_label("mean")
+        fig.tight_layout(); fig.savefig(save_path, bbox_inches="tight"); plt.close(fig)
+    except Exception as e:
+        print(f"[WARN] Failed to save heatmap {save_path}: {e}")
 
-# -------- GATE VISUALS --------
+# ===================== CSV PARSING (TARGETED) =====================
+def clean_and_parse(pred_str: str):
+    """
+    Remove 'np.float32(...)' wrappers and parse the list string → [float,...]
+    Matches your provided snippet; intentionally NOT general.
+    """
+    cleaned = re.sub(r'np\.float32\((.*?)\)', r'\1', pred_str)
+    # safer than eval; switch to eval(cleaned) if you prefer exact mimic
+    vals = ast.literal_eval(cleaned)
+    return [float(v) for v in vals]
+
+def cm_from_fixed_csv(csv_path: Path, num_classes_hint: Optional[int]):
+    """
+    Expect CSV columns: patient,label,prediction
+      - label: integer class id
+      - prediction: string like "[np.float32(...), ...]"
+    Returns (C,C) CM and the label array (for gate alignment).
+    """
+    df = pd.read_csv(csv_path)
+    # labels
+    y_true = df["label"].astype(int).to_numpy()
+    # logits → argmax labels
+    logits = np.vstack(df["prediction"].apply(clean_and_parse).values)  # (N,E)
+    y_pred = np.argmax(logits, axis=1).astype(int)
+
+    C = int(max(y_true.max(initial=0), y_pred.max(initial=0)) + 1)
+    if num_classes_hint is not None:
+        C = max(C, int(num_classes_hint))
+
+    cm = np.zeros((C, C), dtype=float)
+    for t, p in zip(y_true, y_pred):
+        if 0 <= t < C and 0 <= p < C:
+            cm[t, p] += 1.0
+    return cm, y_true
+
+def scan_max_class_index_fixed(folds, which: str) -> Optional[int]:
+    """
+    Read label column from {val|test}.csv to guess C.
+    """
+    fname = VAL_CSV_NAME if which == "val" else TEST_CSV_NAME
+    max_idx = -1
+    for fd in folds:
+        p = fd / fname
+        if not p.exists():
+            continue
+        try:
+            y = pd.read_csv(p)["label"].astype(int).to_numpy()
+            if y.size > 0:
+                max_idx = max(max_idx, int(np.nanmax(y)))
+        except Exception as e:
+            print(f"[WARN] scan classes ({which}): failed on {p}: {e}")
+    return (max_idx + 1) if max_idx >= 0 else None
+
+def load_stack_square(folds, filename):
+    mats, ref_shape = [], None
+    for fd in folds:
+        fpath = fd / filename
+        if not fpath.exists():
+            continue
+        cm = np.load(fpath)
+        if cm.ndim != 2 or cm.shape[0] != cm.shape[1]:
+            continue
+        if ref_shape is None:
+            ref_shape = cm.shape
+        elif cm.shape != ref_shape:
+            continue
+        mats.append(cm.astype(float))
+    if not mats:
+        return None, []
+    return np.stack(mats, axis=0), []
+
+# ===================== GATES + SPECIALIZATION =====================
+def load_gates(folds, filename, reduce_k: str = "auto"):
+    arrs = []
+    for fd in folds:
+        fpath = fd / filename
+        if not fpath.exists():
+            continue
+        g = np.load(fpath)
+        # normalize to (N,E)
+        if g.ndim == 1:
+            g = g[None, :]
+        elif g.ndim == 2:
+            pass
+        elif g.ndim == 3:
+            if g.shape[1] == 1:
+                g = np.squeeze(g, axis=1)
+            else:
+                g = g.mean(axis=1) if reduce_k in ("auto", "mean") else g.sum(axis=1)
+        else:
+            continue
+        g = g.astype(float)
+        rs = g.sum(axis=1, keepdims=True)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            g = np.divide(g, rs, out=np.zeros_like(g), where=rs > 0)
+        arrs.append(g)
+    if not arrs:
+        return None, []
+    return arrs, []
+
 def plot_gate_means_across_folds(gates_list, save_path_bar, save_path_heatmap=None):
     try:
-        per_fold_means = [g.mean(axis=0) for g in gates_list]  # each -> (E,)
-        M = np.stack(per_fold_means, axis=0)                   # (F, E)
-        mean = M.mean(axis=0)
-        std = M.std(axis=0, ddof=0)
-        E = mean.shape[0]
-        x = np.arange(E)
-
+        per_fold_means = [g.mean(axis=0) for g in gates_list]  # (E,)
+        M = np.stack(per_fold_means, axis=0)                   # (F,E)
+        mean = M.mean(axis=0); std = M.std(axis=0, ddof=0)
+        E = mean.shape[0]; x = np.arange(E)
         fig, ax = plt.subplots(figsize=(max(6, 0.5*E + 3), 4), dpi=200)
         ax.bar(x, mean, yerr=std, capsize=3)
-        ax.set_xticks(x)
-        ax.set_xticklabels([f"Exp{j}" for j in x], rotation=45, ha="right")
-        ax.set_ylabel("Mean gate probability")
-        ax.set_title("Mixture-of-Experts: mean gate per expert (across folds)")
-        fig.tight_layout()
-        fig.savefig(save_path_bar, bbox_inches="tight")
-        plt.close(fig)
-
+        ax.set_xticks(x); ax.set_xticklabels([f"Exp{j}" for j in x], rotation=45, ha="right")
+        ax.set_ylabel("Mean gate probability"); ax.set_title("Mean gate per expert (across folds)")
+        fig.tight_layout(); fig.savefig(save_path_bar, bbox_inches="tight"); plt.close(fig)
         if save_path_heatmap is not None:
             fig, ax = plt.subplots(figsize=(0.4*E + 3, 0.4*M.shape[0] + 2.5), dpi=200)
             im = ax.imshow(M, aspect="auto", cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0)
-            ax.set_xlabel("Expert")
-            ax.set_ylabel("Fold")
-            ax.set_xticks(x)
-            ax.set_xticklabels([f"Exp{j}" for j in x], rotation=45, ha="right")
-            ax.set_yticks(range(M.shape[0]))
-            ax.set_yticklabels([f"{i+1}" for i in range(M.shape[0])])
+            ax.set_xlabel("Expert"); ax.set_ylabel("Fold")
+            ax.set_xticks(x); ax.set_xticklabels([f"Exp{j}" for j in x], rotation=45, ha="right")
+            ax.set_yticks(range(M.shape[0])); ax.set_yticklabels([f"{i+1}" for i in range(M.shape[0])])
             ax.set_title("Per-fold mean gate per expert")
-            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-            cbar.set_label("mean gate")
-            fig.tight_layout()
-            fig.savefig(save_path_heatmap, bbox_inches="tight")
-            plt.close(fig)
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04); cbar.set_label("mean gate")
+            fig.tight_layout(); fig.savefig(save_path_heatmap, bbox_inches="tight"); plt.close(fig)
     except Exception as e:
         print(f"[WARN] Failed plotting gates mean/heatmap: {e}")
 
 def plot_top1_expert_usage(gates_list, save_path_bar, save_path_perfold=None):
     try:
-        all_top1 = []
-        for g in gates_list:
-            top = np.argmax(g, axis=1)
-            all_top1.append(top)
-        all_top1 = np.concatenate(all_top1, axis=0)
+        all_top1 = np.concatenate([np.argmax(g, axis=1) for g in gates_list], axis=0)
         E = gates_list[0].shape[1]
         counts = np.array([(all_top1 == j).sum() for j in range(E)], dtype=float)
         frac = counts / counts.sum() if counts.sum() > 0 else np.zeros_like(counts)
-
         fig, ax = plt.subplots(figsize=(max(6, 0.5*E + 3), 4), dpi=200)
         ax.bar(np.arange(E), frac)
-        ax.set_xticks(np.arange(E))
-        ax.set_xticklabels([f"Exp{j}" for j in range(E)], rotation=45, ha="right")
-        ax.set_ylabel("Fraction of samples")
-        ax.set_title("Top-1 expert usage (aggregated over folds)")
-        fig.tight_layout()
-        fig.savefig(save_path_bar, bbox_inches="tight")
-        plt.close(fig)
-
+        ax.set_xticks(np.arange(E)); ax.set_xticklabels([f"Exp{j}" for j in range(E)], rotation=45, ha="right")
+        ax.set_ylabel("Fraction of samples"); ax.set_title("Top-1 expert usage (global)")
+        fig.tight_layout(); fig.savefig(save_path_bar, bbox_inches="tight"); plt.close(fig)
         if save_path_perfold is not None:
             F = len(gates_list)
             per_fold = np.zeros((F, E), dtype=float)
             for i, g in enumerate(gates_list):
-                t = np.argmax(g, axis=1)
+                t = np.argmax(g, axis=1); 
                 for j in range(E):
                     per_fold[i, j] = (t == j).mean() if t.size > 0 else 0.0
-
             fig, ax = plt.subplots(figsize=(0.4*E + 3, 0.4*F + 2.5), dpi=200)
             im = ax.imshow(per_fold, aspect="auto", cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0)
-            ax.set_xlabel("Expert")
-            ax.set_ylabel("Fold")
-            ax.set_xticks(range(E))
-            ax.set_xticklabels([f"Exp{j}" for j in range(E)], rotation=45, ha="right")
-            ax.set_yticks(range(F))
-            ax.set_yticklabels([f"{i+1}" for i in range(F)])
-            ax.set_title("Top-1 expert usage per fold (fraction)")
-            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-            cbar.set_label("fraction")
-            fig.tight_layout()
-            fig.savefig(save_path_perfold, bbox_inches="tight")
-            plt.close(fig)
+            ax.set_xlabel("Expert"); ax.set_ylabel("Fold")
+            ax.set_xticks(range(E)); ax.set_xticklabels([f"Exp{j}" for j in range(E)], rotation=45, ha="right")
+            ax.set_yticks(range(F)); ax.set_yticklabels([f"{i+1}" for i in range(F)])
+            ax.set_title("Top-1 expert usage per fold")
+            cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04); cbar.set_label("fraction")
+            fig.tight_layout(); fig.savefig(save_path_perfold, bbox_inches="tight"); plt.close(fig)
     except Exception as e:
         print(f"[WARN] Failed plotting top1 usage: {e}")
 
-# ===================== MAIN PIPELINE =====================
-def process_result_dir(res_dir: Path):
-    """
-    Processes a single result directory, writes per-dir summaries/plots,
-    and RETURNS per-fold metrics for global aggregation.
-    """
+def plot_gate_per_sample(g, y, save_path):
+    try:
+        if g is None or y is None or g.shape[0] != y.shape[0] or g.size == 0 or y.size == 0:
+            return
+        order = np.argsort(y, kind="stable")
+        g_sorted = g[order]; y_sorted = y[order]
+        E = g_sorted.shape[1]; N = g_sorted.shape[0]
+        boundaries = np.where(np.diff(y_sorted) != 0)[0] + 1
+        fig_h = min(0.02 * N + 2.5, 16)
+        fig, ax = plt.subplots(figsize=(0.45*E + 3, fig_h), dpi=200)
+        im = ax.imshow(g_sorted, aspect="auto", cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0)
+        ax.set_xlabel("Expert"); ax.set_ylabel("Samples (sorted by class)")
+        ax.set_xticks(range(E)); ax.set_xticklabels([f"Exp{j}" for j in range(E)], rotation=45, ha="right")
+        for b in boundaries: ax.axhline(b - 0.5, color="white", linewidth=0.6)
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04); cbar.set_label("gate prob")
+        fig.tight_layout(); fig.savefig(save_path, bbox_inches="tight"); plt.close(fig)
+    except Exception as e:
+        print(f"[WARN] Failed plotting per-sample gate heatmap {save_path}: {e}")
+
+def plot_gate_by_class(gates_list, labels_list, C, out_dir: Path, split_name: str):
+    try:
+        if not gates_list or not labels_list:
+            return
+        m_means, m_top1 = [], []
+        for g, y in zip(gates_list, labels_list):
+            if g is None or y is None or g.shape[0] != y.shape[0]:
+                continue
+            E = g.shape[1]
+            class_means = np.zeros((C, E), dtype=float)
+            class_fracs = np.zeros((C, E), dtype=float)
+            top1 = np.argmax(g, axis=1)
+            for c in range(C):
+                idx = (y == c)
+                if idx.any():
+                    class_means[c] = g[idx].mean(axis=0)
+                    for e in range(E):
+                        class_fracs[c, e] = (top1[idx] == e).mean()
+            m_means.append(class_means); m_top1.append(class_fracs)
+        if not m_means: return
+        A = np.stack(m_means, axis=0).mean(axis=0)
+        B = np.stack(m_top1, axis=0).mean(axis=0)
+        labels = LEVEL_LABELS if (LEVEL_LABELS and len(LEVEL_LABELS) == C) else [str(i) for i in range(C)]
+        # Mean gate per class
+        fig, ax = plt.subplots(figsize=(0.5*A.shape[1]+4, 0.5*A.shape[0]+4), dpi=200)
+        im = ax.imshow(A, cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0, aspect="auto")
+        ax.set_title(f"{split_name}: Mean gate probability per class")
+        ax.set_xlabel("Expert"); ax.set_ylabel("Class")
+        ax.set_xticks(range(A.shape[1])); ax.set_xticklabels([f"Exp{j}" for j in range(A.shape[1])], rotation=45, ha="right")
+        ax.set_yticks(range(C)); ax.set_yticklabels(labels)
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04); cbar.set_label("mean gate")
+        fig.tight_layout(); fig.savefig(out_dir / f"gates_mean_per_class_{split_name}.png", bbox_inches="tight"); plt.close(fig)
+        # Top-1 fraction per class
+        fig, ax = plt.subplots(figsize=(0.5*B.shape[1]+4, 0.5*B.shape[0]+4), dpi=200)
+        im = ax.imshow(B, cmap=plt.cm.YlGnBu, vmin=0.0, vmax=1.0, aspect="auto")
+        ax.set_title(f"{split_name}: Top-1 expert fraction per class")
+        ax.set_xlabel("Expert"); ax.set_ylabel("Class")
+        ax.set_xticks(range(B.shape[1])); ax.set_xticklabels([f"Exp{j}" for j in range(B.shape[1])], rotation=45, ha="right")
+        ax.set_yticks(range(C)); ax.set_yticklabels(labels)
+        cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04); cbar.set_label("fraction")
+        fig.tight_layout(); fig.savefig(out_dir / f"gates_top1_per_class_{split_name}.png", bbox_inches="tight"); plt.close(fig)
+    except Exception as e:
+        print(f"[WARN] Failed plotting gate-by-class ({split_name}): {e}")
+
+# ===================== PER-DIR PIPELINE =====================
+def process_result_dir(res_dir: Path, rel_prefix: str = ""):
     out_dir = ensure_outdir(res_dir / OUTDIR_NAME)
     folds = find_folds(res_dir)
     if not folds:
         print(f"[INFO] Skipping {res_dir}: no fold_* directories.")
-        return {"name": res_dir.name, "baccs": [], "wf1s": []}
+        return {"name": (rel_prefix + res_dir.name),
+                "val": {"baccs": [], "wf1s": [], "accs": []},
+                "test":{"baccs": [], "wf1s": [], "accs": []}}
 
-    # -------- Confusion Matrices (single head) --------
-    baccs, wf1s, accs = [], [], []
-    stack_raw, cm_paths = load_stack_square(folds, CONF_FNAME)
+    # class-count hints from labels
+    C_val  = scan_max_class_index_fixed(folds, "val")
+    C_test = scan_max_class_index_fixed(folds, "test")
 
-    if stack_raw is not None and stack_raw.size > 0:
-        # Visual mean/std from row-normalized
-        stack_norm = np.stack([row_normalize(cm) for cm in stack_raw], axis=0)
-        mean_cm = stack_norm.mean(axis=0)
-        std_cm  = stack_norm.std(axis=0, ddof=0)
-        C = mean_cm.shape[0]
-        labels = LEVEL_LABELS if (LEVEL_LABELS and len(LEVEL_LABELS) == C) else [str(i) for i in range(C)]
-        heatmap_mean_std(mean_cm, std_cm, labels,
-                         title="Single-Head",
-                         save_path=out_dir / "singlehead_normalised_confusion_mean_std.png")
+    results = {"name": (rel_prefix + res_dir.name),
+               "val": {"baccs": [], "wf1s": [], "accs": []},
+               "test":{"baccs": [], "wf1s": [], "accs": []}}
 
-        # Metrics per fold from raw counts
-        for k in range(stack_raw.shape[0]):
-            try:
+    labels_val_list, labels_test_list = [], []
+
+    for split, fname, cmfb, Chint in [
+        ("val",  VAL_CSV_NAME,  CONF_VAL_FNAME,  C_val),
+        ("test", TEST_CSV_NAME, CONF_TEST_FNAME, C_test),
+    ]:
+        per_fold_cms, per_fold_labels = [], []
+        for fd in folds:
+            csvp = fd / fname
+            if csvp.exists():
+                try:
+                    cm, y_true = cm_from_fixed_csv(csvp, Chint)
+                    per_fold_cms.append(cm); per_fold_labels.append(y_true)
+                except Exception as e:
+                    print(f"[WARN] {res_dir.name} {fd.name} {split}: CSV parse failed: {e}")
+            else:
+                print(f"[INFO] {res_dir.name} {fd.name}: missing {fname}; trying fallback CM.")
+
+        if not per_fold_cms:
+            stack_raw, _ = load_stack_square(folds, cmfb)
+            if stack_raw is not None:
+                per_fold_cms = [stack_raw[k] for k in range(stack_raw.shape[0])]
+                per_fold_labels = [None]*len(per_fold_cms)
+
+        if per_fold_cms:
+            stack_raw = np.stack(per_fold_cms, axis=0)
+            stack_norm = np.stack([row_normalize(cm) for cm in stack_raw], axis=0)
+            mean_cm = stack_norm.mean(axis=0); std_cm = stack_norm.std(axis=0, ddof=0)
+            C = mean_cm.shape[0]
+            labels = LEVEL_LABELS if (LEVEL_LABELS and len(LEVEL_LABELS) == C) else [str(i) for i in range(C)]
+            heatmap_mean_std(mean_cm, std_cm, labels, split.upper(),
+                             out_dir / f"{split}_normalised_confusion_mean_std.png")
+
+            baccs, wf1s, accs = [], [], []
+            for k in range(stack_raw.shape[0]):
                 b, f, a = metrics_from_cm(stack_raw[k])
                 baccs.append(b); wf1s.append(f); accs.append(a)
-            except Exception as e:
-                print(f"[WARN] Failed metrics on {res_dir.name} fold {k}: {e}")
 
-        df = pd.DataFrame(
-            {
+            df = pd.DataFrame({
                 "Metric": ["Balanced Accuracy", "Weighted F1", "Accuracy"],
-                "Mean":   [np.mean(baccs) if baccs else np.nan,
-                           np.mean(wf1s) if wf1s else np.nan,
-                           np.mean(accs) if accs else np.nan],
-                "Std":    [np.std(baccs, ddof=0) if baccs else np.nan,
-                           np.std(wf1s, ddof=0) if wf1s else np.nan,
-                           np.std(accs, ddof=0) if accs else np.nan],
-            }
-        ).round(4)
-        try_export_img(df, out_dir / "singlehead_metrics_mean_std.png")
-        try:
-            df.to_csv(out_dir / "singlehead_metrics_mean_std.csv", index=False)
-        except Exception as e:
-            print(f"[WARN] Failed saving CSV in {out_dir}: {e}")
-    else:
-        print(f"[WARN] {res_dir.name}: No valid confusion matrices found; skipping CM-based plots.")
+                "Mean":   [np.mean(baccs), np.mean(wf1s), np.mean(accs)],
+                "Std":    [np.std(baccs, ddof=0), np.std(wf1s, ddof=0), np.std(accs, ddof=0)]
+            }).round(4)
+            try_export_img(df, out_dir / f"{split}_metrics_mean_std.png")
+            df.to_csv(out_dir / f"{split}_metrics_mean_std.csv", index=False)
 
-    # -------- Gates (Mixture of Experts) --------
-    try:
-        gates_list, gate_paths = load_gates(folds, GATES_FNAME)
-    except Exception as e:
-        print(f"[WARN] {res_dir.name}: loading gates raised {e}")
-        gates_list = None
+            results[split]["baccs"] = baccs; results[split]["wf1s"] = wf1s; results[split]["accs"] = accs
 
-    if gates_list:
+            if split == "val":
+                labels_val_list = per_fold_labels
+                C_val = C
+            else:
+                labels_test_list = per_fold_labels
+                C_test = C
+        else:
+            print(f"[WARN] {res_dir.name}: No {split} confusion matrices available.")
+
+    # Gates (global quick stats)
+    gates_test_list, _ = load_gates(folds, GATES_TEST_FNAME)
+    gates_val_list,  _ = load_gates(folds, GATES_VAL_FNAME)
+    g_any = gates_test_list if gates_test_list else gates_val_list
+    if g_any:
         plot_gate_means_across_folds(
-            gates_list,
+            g_any,
             save_path_bar=out_dir / "gates_mean_per_expert_bar.png",
             save_path_heatmap=out_dir / "gates_mean_per_expert_per_fold_heatmap.png",
         )
         plot_top1_expert_usage(
-            gates_list,
+            g_any,
             save_path_bar=out_dir / "gates_top1_usage_global.png",
             save_path_perfold=out_dir / "gates_top1_usage_per_fold_heatmap.png",
         )
 
-        # Per-expert mean±std CSV (guarded)
-        try:
-            per_fold_means = [g.mean(axis=0) for g in gates_list]  # list of (E,)
-            M = np.stack(per_fold_means, axis=0)                   # (F, E)
-            gate_df = pd.DataFrame({
-                "Expert": [f"Exp{j}" for j in range(M.shape[1])],
-                "Mean":   M.mean(axis=0),
-                "Std":    M.std(axis=0, ddof=0),
-            }).round(6)
-            try_export_img(gate_df, out_dir / "gates_mean_per_expert.png")
-            gate_df.to_csv(out_dir / "gates_mean_per_expert.csv", index=False)
-        except Exception as e:
-            print(f"[WARN] {res_dir.name}: failed to write gates CSV: {e}")
-    else:
-        print(f"[WARN] {res_dir.name}: No valid gates found.")
+    # Gate specialization by class (needs labels from CSV)
+    if gates_test_list and labels_test_list and any(lbl is not None for lbl in labels_test_list) and C_test is not None:
+        plot_gate_by_class(gates_test_list, labels_test_list, C_test, out_dir, "test")
+        for i, (g, y) in enumerate(zip(gates_test_list, labels_test_list)):
+            if g is not None and y is not None and g.shape[0] == y.shape[0]:
+                plot_gate_per_sample(g, y, out_dir / f"gates_per_sample_test_fold{i}.png")
+    if gates_val_list and labels_val_list and any(lbl is not None for lbl in labels_val_list) and C_val is not None:
+        plot_gate_by_class(gates_val_list, labels_val_list, C_val, out_dir, "val")
+        for i, (g, y) in enumerate(zip(gates_val_list, labels_val_list)):
+            if g is not None and y is not None and g.shape[0] == y.shape[0]:
+                plot_gate_per_sample(g, y, out_dir / f"gates_per_sample_val_fold{i}.png")
 
-    # Return what we have (even if empty) so global CSV can be built
-    return {"name": res_dir.name, "baccs": baccs, "wf1s": wf1s}
+    return results
 
+# ===================== GLOBAL SUMMARY =====================
 def build_global_summary(rows, save_dir: Path):
-    """
-    rows: list of dicts like {"name": <res_dir_name>, "baccs": [...], "wf1s": [...]}
-    Writes a single CSV that contains each directory's per-fold bAcc/wF1 plus mean/std.
-    """
     ensure_outdir(save_dir)
-    max_folds = max((len(r["baccs"]) for r in rows), default=0)
-    bacc_fold_cols = [f"bAcc_fold{i}" for i in range(max_folds)]
-    wf1_fold_cols  = [f"wF1_fold{i}"  for i in range(max_folds)]
+    def _max_folds(rows, split, key):
+        return max((len(r.get(split, {}).get(key, [])) for r in rows), default=0)
 
-    records = []
+    mvb = _max_folds(rows, "val", "baccs"); mvf = _max_folds(rows, "val", "wf1s")
+    mtb = _max_folds(rows, "test","baccs"); mtf = _max_folds(rows, "test","wf1s")
+    vF = max(mvb, mvf); tF = max(mtb, mtf)
+
+    cols = ["ResultDir"]
+    v_b_cols = [f"Val_bAcc_fold{i}" for i in range(vF)]
+    v_f_cols = [f"Val_wF1_fold{i}"  for i in range(vF)]
+    t_b_cols = [f"Test_bAcc_fold{i}" for i in range(tF)]
+    t_f_cols = [f"Test_wF1_fold{i}"  for i in range(tF)]
+    cols += v_b_cols + ["Val_bAcc_mean","Val_bAcc_std"] + v_f_cols + ["Val_wF1_mean","Val_wF1_std"]
+    cols += t_b_cols + ["Test_bAcc_mean","Test_bAcc_std"] + t_f_cols + ["Test_wF1_mean","Test_wF1_std"]
+
+    recs = []
     for r in rows:
         rec = {"ResultDir": r["name"]}
-        # per-fold values, pad with NaN if fewer folds
-        for i in range(max_folds):
-            rec[bacc_fold_cols[i]] = r["baccs"][i] if i < len(r["baccs"]) else np.nan
-            rec[wf1_fold_cols[i]]  = r["wf1s"][i]  if i < len(r["wf1s"])  else np.nan
-        # Mean / Std
-        baccs = np.array(r["baccs"], dtype=float) if r["baccs"] else np.array([])
-        wf1s  = np.array(r["wf1s"],  dtype=float) if r["wf1s"]  else np.array([])
-        rec["bAcc_mean"] = baccs.mean() if baccs.size else np.nan
-        rec["bAcc_std"]  = baccs.std(ddof=0) if baccs.size else np.nan
-        rec["wF1_mean"]  = wf1s.mean()  if wf1s.size  else np.nan
-        rec["wF1_std"]   = wf1s.std(ddof=0)  if wf1s.size  else np.nan
-        records.append(rec)
+        vb, vf = r.get("val", {}).get("baccs", []), r.get("val", {}).get("wf1s", [])
+        tb, tf = r.get("test", {}).get("baccs", []), r.get("test", {}).get("wf1s", [])
+        for i in range(vF):
+            rec[v_b_cols[i]] = vb[i] if i < len(vb) else np.nan
+            rec[v_f_cols[i]] = vf[i] if i < len(vf) else np.nan
+        for i in range(tF):
+            rec[t_b_cols[i]] = tb[i] if i < len(tb) else np.nan
+            rec[t_f_cols[i]] = tf[i] if i < len(tf) else np.nan
+        vb_arr = np.array(vb, dtype=float) if vb else np.array([])
+        vf_arr = np.array(vf, dtype=float) if vf else np.array([])
+        tb_arr = np.array(tb, dtype=float) if tb else np.array([])
+        tf_arr = np.array(tf, dtype=float) if tf else np.array([])
+        rec["Val_bAcc_mean"] = vb_arr.mean() if vb_arr.size else np.nan
+        rec["Val_bAcc_std"]  = vb_arr.std(ddof=0) if vb_arr.size else np.nan
+        rec["Val_wF1_mean"]  = vf_arr.mean() if vf_arr.size else np.nan
+        rec["Val_wF1_std"]   = vf_arr.std(ddof=0) if vf_arr.size else np.nan
+        rec["Test_bAcc_mean"] = tb_arr.mean() if tb_arr.size else np.nan
+        rec["Test_bAcc_std"]  = tb_arr.std(ddof=0) if tb_arr.size else np.nan
+        rec["Test_wF1_mean"]  = tf_arr.mean() if tf_arr.size else np.nan
+        rec["Test_wF1_std"]   = tf_arr.std(ddof=0) if tf_arr.size else np.nan
+        recs.append(rec)
 
-    cols = ["ResultDir"] + bacc_fold_cols + ["bAcc_mean", "bAcc_std"] + wf1_fold_cols + ["wF1_mean", "wF1_std"]
-    df = pd.DataFrame.from_records(records, columns=cols).round(6)
-    csv_path = save_dir / "summary_all_results_metrics.csv"
-    try:
-        df.to_csv(csv_path, index=False)
-        print(f"[INFO] Wrote global summary → {csv_path}")
-    except Exception as e:
-        print(f"[WARN] Failed writing global CSV {csv_path}: {e}")
+    df = pd.DataFrame.from_records(recs, columns=cols).round(6)
+    outp = save_dir / "summary_all_results_metrics_val_and_test.csv"
+    df.to_csv(outp, index=False)
+    print(f"[INFO] Wrote global summary → {outp}")
 
-
+# ===================== DRIVER =====================
 def main():
-    result_dirs = find_result_dirs(ROOT, RESULT_DIR_PATTERN)
-    if not result_dirs:
-        return
-    print(f"[INFO] Found {len(result_dirs)} result directories.")
+    global GLOBAL_OUTDIR
+    base_root, search_roots = discover_search_roots(ROOT)
+    GLOBAL_OUTDIR = base_root / "summary_global"
 
     rows_for_global = []
-    for rd in result_dirs:
-        print(f"[INFO] Processing: {rd}")
-        row = process_result_dir(rd)
-        rows_for_global.append(row)
+    total_dirs = 0
+    for sr in search_roots:
+        rel_prefix = "" if sr == base_root else (sr.name + "/")
+        rdirs = find_result_dirs(sr)
+        total_dirs += len(rdirs)
+        for rd in rdirs:
+            print(f"[INFO] Processing: {rd}")
+            rows_for_global.append(process_result_dir(rd, rel_prefix=rel_prefix))
 
+    if not rows_for_global:
+        print("[WARN] No results processed; nothing to summarize.")
+        return
+
+    print(f"[INFO] Processed {total_dirs} result directories across {len(search_roots)} expert roots.")
     build_global_summary(rows_for_global, GLOBAL_OUTDIR)
     print("[DONE] All result directories processed.")
-
 
 if __name__ == "__main__":
     main()

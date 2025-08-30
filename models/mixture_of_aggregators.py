@@ -95,7 +95,7 @@ class MixtureOfAggregators(nn.Module):
         else:
             self.head = None
 
-    def forward(self, x, temp=1.0, k=None):
+    def forward(self, x, temp=1.0, k=None, use_gumbel=False):
         B, N, _ = x.shape
         k = k or self.k_active
         if self.router_type == "transformer":
@@ -104,6 +104,14 @@ class MixtureOfAggregators(nn.Module):
         else:
             router_in = self.router_proj(x).mean(dim=1)  # [B, dim]
             router_logits = self.router_fc(router_in)    # [B, E]
+
+        # Optional Gumbel-softmax noise during training to encourage exploration
+        if use_gumbel and self.training:
+            eps = 1e-9
+            U = torch.rand_like(router_logits)
+            gumbel = -torch.log(-torch.log(U + eps) + eps)
+            router_logits = router_logits + gumbel
+
         g_soft = F.softmax(router_logits / temp, dim=-1)  # [B, E]
 
         if self.router_style == "dense":
