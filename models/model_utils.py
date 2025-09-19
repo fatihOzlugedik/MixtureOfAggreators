@@ -1,6 +1,4 @@
-"""
-Hacked together from https://github.com/lucidrains
-"""
+
 
 import math
 from functools import wraps
