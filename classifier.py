@@ -1,11 +1,11 @@
 import torch.nn as nn
 import models as models
 
-class cAItomorph(nn.Module):
+class ClassifierWrapper(nn.Module):
     def __init__(self, class_count, arch, embedding_dim=768,
                  expert_mode="shared", router_style="topk", topk=1,
                  use_local_head=False, save_gates=False, num_expert=1, router_type="linear"):
-        super(cAItomorph, self).__init__()
+        super(ClassifierWrapper, self).__init__()
 
         if arch not in models.__dict__:
             raise ValueError(f"Unknown model architecture '{arch}'")
@@ -62,4 +62,4 @@ class cAItomorph(nn.Module):
         return logits
 
     def __repr__(self):
-        return f"cAItomorph(model={self.model})"
+        return f"ClassifierWrapper(model={self.model})"
