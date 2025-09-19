@@ -12,7 +12,7 @@ import networkx as nx
 import gc
 
 from infer import ModelInfer
-from classifier import cAItomorph     
+from classifier import ClassifierWrapper     
 from dataset import MILDataset 
 from plot_confusion import plot_confusion_matrix
 
@@ -104,7 +104,7 @@ def main():
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found: {model_path}")
     
-    model = cAItomorph(
+    model = ClassifierWrapper(
         class_count=class_count,
         arch=config['arch'],
         embedding_dim=datasets['test'].get_dimension()
