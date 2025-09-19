@@ -87,7 +87,7 @@ class ModelTrainer:
                 best_metric = target_metric
                 best_state = copy.deepcopy(self.model.state_dict())
                 _no_improve_epochs = 0
-                torch.save(best_state, self.save_path / "cAItomorph_best_weights.pth")
+                torch.save(best_state, self.save_path / "MoA_best_weights.pth")
                 print(f"🔖  Saved new best model (metric={best_metric:.4f})")
             else:
                 _no_improve_epochs += 1
