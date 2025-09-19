@@ -10,7 +10,7 @@ from pathlib import Path
 from sklearn.model_selection import StratifiedKFold
 
 from model_train import ModelTrainer
-from classifier import cAItomorph
+from classifier import ClassifierWrapper
 from dataset import MILDataset
 from plot_confusion import plot_confusion_matrix
 from scheduler import BuildScheduler
@@ -177,7 +177,7 @@ def main():
         dataloaders['test'] = DataLoader(datasets['test'], batch_size=1, shuffle=False, num_workers=num_workers, pin_memory=True)
         print("Dataloaders are ready..")
 
-        model = cAItomorph(
+        model = ClassifierWrapper(
             class_count=class_count,
             arch=args.arch,
             embedding_dim=embedding_dim,
